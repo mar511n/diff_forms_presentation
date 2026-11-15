@@ -1,11 +1,11 @@
 # Differential form $\omega$
 A differential $k$-form $\omega \in \Omega^k(M)$ on a manifold $M$ is a smooth assignment $p \longmapsto \omega_p$ at each point $p$ on the manifold, where $\omega_p$ is an alternating $k$-linear map
 $$
-\omega_p : \underbrace{T_p M \times \dots \times T_p M}_{k\text{ times}} \longmapsto \mathbb{R}.
+\omega_p : \underbrace{T_p M \times \dots \times T_p M}_{k\text{ times}} \longrightarrow \mathbb{R}.
 $$
 
 - A $0$-form is just a function $p \longmapsto f(p)$.
-- $1$-forms can be interpreted as covectorfields
+- $1$-forms can be interpreted as covector fields
 - in general $k$-forms correspond to alternating covariant tensors of rank $k$
 - differential forms provide a coordinate independent geometrical framework
 
@@ -14,18 +14,23 @@ $\boxed{\Rightarrow\text{useful for physics in GR, EM}}$
 **Visualization**: set of machines at each point on the manifold, that take $k$ vectors and spit out a number. (Interpretation as integrands over curves, surfaces, volumes (manifolds) later)
 
 # Wedge product $\wedge$
-The wedge product between a $k$-form $\alpha$ and an $\ell$-form $\beta$ can be defined pointwise by it's action on vectors of the tangent space:
+The wedge product between a $k$-form $\alpha$ and an $\ell$-form $\beta$ can be defined pointwise by its action on vectors of the tangent space:
 $$
 (\alpha\wedge\beta)(v_1,\dots,v_{k+\ell}) = \frac{1}{k!\ell!} \sum_{\sigma\in S_{k+\ell}} \mathrm{sgn}(\sigma) \alpha(v_{\sigma(1)},\dots,v_{\sigma(k)}) \beta(v_{\sigma(k+1)},\dots,v_{\sigma(k+\ell)})
 $$
 the wedge product of the two differential forms is then itself a differential $(k+\ell)$-form.
+
+When applied to a combination of a $1$-form $\alpha$ and a $k$-form $\beta$, the formula simplifies to
+$$
+(\alpha \wedge \beta)(v_0,\dots,v_k) = \sum_{i=0}^k (-1)^i \alpha(v_i) \beta(v_0,\dots,v_{i-1},v_{i+1},\dots,v_k).
+$$
 
 **Visualization**: TBD
 
 # Exterior derivative $d$
 The exterior derivative is an operation
 $$
-d : \Omega^k(M) \longmapsto \Omega^{k+1}(M)
+d : \Omega^k(M) \longrightarrow \Omega^{k+1}(M)
 $$
 and generalizes gradient, curl and divergence.
 
@@ -54,7 +59,7 @@ From this definition one can derive the
 **Visualization**: TBD
 
 # Inner product
-The inner product of two $k$-forms $\alpha$ and $\beta$, that can be decomposed in $1$-forms $\alpha_1,\dots,\alpha_k$ and $\beta_1,\dots,\beta_k$ is
+The inner product of two $k$-forms $\alpha$ and $\beta$, that can be decomposed in $1$-forms $\alpha = \alpha_1\wedge\dots\wedge\alpha_k$ and $\beta=\beta_1\wedge\dots\wedge\beta_k$ is
 $$
 \langle \alpha, \beta \rangle = \langle \alpha_1\wedge\cdots\wedge\alpha_k,\,
 \beta_1\wedge\cdots\wedge\beta_k\rangle
@@ -100,7 +105,7 @@ $$
 # Hodge star $\star$
 The Hodge star is the unique linear map
 $$
-\star: \Omega^k(M) \longmapsto \Omega^{n-k}(M)
+\star: \Omega^k(M) \longrightarrow \Omega^{n-k}(M)
 $$
 which fulfills for all $k$-forms $\alpha,\beta$:
 $$
@@ -108,20 +113,20 @@ $$
 $$
 
 ## In the coframe picture
-For an oriented coframe $\theta^1,\dots,\theta^n$ the volume is given by
+For a positively oriented orthonormal coframe $\theta^1,\dots,\theta^n$ the volume is given by
 $$
 \mathrm{vol}_g = \theta^1 \wedge \dots \wedge \theta^n.
 $$
-Applying the Hodge star operator to a basis $k$-frame $\theta^{i_1}\wedge\dots\wedge\theta^{i_k}$ gives:
+Applying the Hodge star operator to a basis $k$-form $\theta^{i_1}\wedge\dots\wedge\theta^{i_k}$ gives:
 $$
-\star (\theta^{i_1}\wedge\dots\wedge\theta^{i_k}) = \mathrm{sgn}(\sigma) \theta^{j_1}\wedge\dots\wedge\theta^{j_{n-k}}
+\star (\theta^{i_1}\wedge\dots\wedge\theta^{i_k}) = \mathrm{sgn}(\sigma) \left(\prod_{r=1}^k \eta^{i_r i_r}\right) \theta^{j_1}\wedge\dots\wedge\theta^{j_{n-k}}
 $$
 Here $\sigma$ is the permutation $(i_1,\dots,i_k,j_1,\dots,j_{n-k})$.
 It can be checked, that this fulfills the required condition.
 
 ## Properties
-- $\star \star = (-1)^{k (n-k)}$
-- $\alpha \wedge \star \alpha = \|\alpha\|^2 \mathrm{vol}_g$
+- $\star \star = (-1)^{k (n-k) + q}$ for a Lorentzian metric with $q$ negative directions
+- $\alpha \wedge \star \alpha = \langle \alpha,\alpha\rangle\, \mathrm{vol}_g$
 
 **Visualization**: TBD
 
@@ -130,7 +135,7 @@ The generalized Stokes theorem states for a differential $(n-1)$-form on an $n$-
 $$
 \int_M d\omega = \int_{\partial M} \omega.
 $$
-To proof this, first consider a cube $C=[a,b]^n \sub \mathbb{R}$ and a differential $(n-1)$-form
+To proof this, first consider a cube $C=[a,b]^n \sub \mathbb{R}^n$ and a differential $(n-1)$-form
 $$
 \omega = \sum_{i=1}^n (-1)^{i-1} f_i(x) dx^1 \wedge \dots \wedge dx^{i-1} \wedge dx^{i+1} \wedge \dots \wedge dx^n.
 $$
@@ -167,8 +172,8 @@ d\omega = \left( \frac{\partial F_y}{\partial x} - \frac{\partial F_x}{\partial 
 $$
 Integration over the exterior derivative gives
 $$
-\int_S d \omega = \iint_S \left( \frac{\partial F_y}{\partial x} - \frac{\partial F_x}{\partial y} \right) n_z\, dx dy + \iint_S \left( \frac{\partial F_x}{\partial z} - \frac{\partial F_z}{\partial x} \right) n_y\,  dz dx + \iint_S \left( \frac{\partial F_z}{\partial y} - \frac{\partial F_y}{\partial z} \right) n_x\,  dy dz \\
-= \iint_S \left( \nabla \times \bm{F} \right) \cdot \begin{pmatrix} n_x\, dy dz \\ n_y\, dz dx \\ n_z\,dx dy \end{pmatrix} \\
+\int_S d \omega = \iint_S \left( \frac{\partial F_y}{\partial x} - \frac{\partial F_x}{\partial y} \right) \mathrm{sgn}(n_z)\, dx dy + \iint_S \left( \frac{\partial F_x}{\partial z} - \frac{\partial F_z}{\partial x} \right) \mathrm{sgn}(n_y)\,  dz dx + \iint_S \left( \frac{\partial F_z}{\partial y} - \frac{\partial F_y}{\partial z} \right) \mathrm{sgn}(n_x)\,  dy dz \\
+= \iint_S \left( \nabla \times \bm{F} \right) \cdot \begin{pmatrix} \mathrm{sgn}(n_x)\, dy dz \\ \mathrm{sgn}(n_y)\, dz dx \\ \mathrm{sgn}(n_z)\,dx dy \end{pmatrix} \\
 =  \iint_S \left( \nabla \times \bm{F} \right) \cdot d\bm{A}.
 $$
 
@@ -181,29 +186,57 @@ It is easy to see that the integral becomes:
 $$
 \int_V d\omega = \iiint_V (\nabla\cdot\bm F)\,dV
 $$
-The integral of the $1$-form $\omega$ is given by:
+The integral of the $2$-form $\omega$ is given by:
 $$
-\int_{\partial V} \omega = \iint_{\partial V} F_x n_x\, dy dz + \iint_{\partial V} F_y n_y\, dz dx + \iint_{\partial V} F_z n_z\, dx dy \\
+\int_{\partial V} \omega = \iint_{\partial V} F_x \mathrm{sgn}(n_x)\, dy dz + \iint_{\partial V} F_y \mathrm{sgn}(n_y)\, dz dx + \iint_{\partial V} F_z \mathrm{sgn}(n_z)\, dx dy \\
 = \iint_{\partial V} \bm{F} \cdot d\bm{A}
 $$
 
 **Visualization**: TBD
 
 # Poincaré lemma
-The Poincaré lemma states that for a $(k+1)$-form $\beta$, with $d\beta = 0$ everywhere, there exists a $k$-form $\alpha$, such that $\beta = d\alpha$.
+The Poincaré lemma states that for a $(k+1)$-form $\beta$, with $d\beta = 0$ everywhere, there exists a $k$-form $\alpha$, such that $\beta = d\alpha$. This is true for a star-shaped region with respect to the origin.
 
 To proof this take the following pointwise definition of $\alpha$:
 $$
-\alpha |_{\bm{x}} (\bm{v}_1, \dots, \bm{v}_k) = \int_0^1 \beta|_{t\bm{x}}(\bm{x},t\bm{v}_1,\dots,t\bm{v}_k) dt
+\alpha |_{x} (v_1, \dots, v_k) = \int_0^1 \beta|_{t x}(x,t v_1,\dots,t v_k) dt
+$$
+The goal is to show $d \alpha |_{x} (v_0, \dots, v_k) = \beta|_{x}(v_0, \dots, v_k)$. First compute the exterior derivative of $\alpha$. In a chart we may take the $v_i$ to be constant, leading to
+$$
+d\alpha |_{x} (v_0, \dots, v_k) = \sum_{i=0}^{k} (-1)^i \partial_{v_i} (\alpha|_x (v_0,\dots,v_{i-1},v_{i+1},\dots,v_k)).
 $$
 
-The goal is to show $d \alpha |_{\bm{x}} (\bm{v}_0, \dots, \bm{v}_k) = \beta|_{\bm{x}}(\bm{v}_0, \dots, \bm{v}_k)$. First compute the exterior derivative of $\alpha$:
+Now insert the definition of $\alpha$ and differentiate under the integral:
 $$
-d\alpha |_{\bm{x}} (\bm{v}_0, \dots, \bm{v}_k) =
+d\alpha |_{x} (v_0, \dots, v_k)
+= \sum_{i=0}^{k} (-1)^i \int_0^1 t^k \left[ t (\partial_{v_i}\beta)\big|_{tx}(x,v_0,\dots,v_{i-1},v_{i+1},\dots,v_k)
++ \beta\big|_{tx}(v_i,v_0,\dots,v_{i-1},v_{i+1},\dots,v_k) \right] dt.
 $$
+
+The second term can be evaluated and simplified by moving the vector $v_i$ $i$-times right, which comes with a factor $(-1)^i$ and integrating $t^k$:
+$$
+\sum_{i=0}^{k} (-1)^i \int_0^1 t^k \beta\big|_{tx}(v_i,v_0,\dots,v_{i-1},v_{i+1},\dots,v_k) dt = (k+1) \int_0^1 t^k \beta|_{tx}(v_0, \dots, v_k) dt
+$$
+
+The first term can be rewritten using the identity
+$$
+d\beta|_{p}(x,v_0,\dots,v_k) = (\partial_x \beta)|_{p}(v_0,\dots,v_k) - \sum_{i=0}^k (-1)^i (\partial_{v_i}\beta)|_{p}(x,v_0,\dots,v_{i-1},v_{i+1},\dots,v_k).
+$$
+Together with the assumption $d\beta = 0$ this gives:
+$$
+\sum_{i=0}^{k} (-1)^i \int_0^1 t^{k+1} (\partial_{v_i}\beta)\big|_{tx}(x,v_0,\dots,v_{i-1},v_{i+1},\dots,v_k)\, dt\\
+= \int_0^1 t^{k+1} (\partial_x \beta)|_{tx}(v_0,\dots,v_k)\, dt
+$$
+
+The exterior derivative of $\alpha$ can therefore be written as
+$$
+d\alpha |_{x} (v_0, \dots, v_k) = \int_0^1 \frac{d}{dt}\left(t^{k+1} \beta|_{tx}(v_0,\dots,v_k)\right) dt \\
+= \beta|_{x}(v_0,\dots,v_k),
+$$
+completing the proof.
 
 # Applications
-- de Rham cohomology and the Poincaré lemma
+- [de Rham cohomology]
 - Maxwell equations
 - Cartan structure equations
 - Einstein equations via forms
