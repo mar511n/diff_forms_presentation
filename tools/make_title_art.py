@@ -4,6 +4,8 @@ A pool of short LaTeX/Typst formulas and objects is typeset once (via Typst)
 and then scattered over the canvas at arbitrary positions, sizes and colours,
 greedily filling the regions where the Cartan portrait is bright -- the same
 trick as an ASCII-art generator, but the "characters" are real formulas.
+Cartan's structure equations are placed last, at anchor size and full opacity,
+so they stay legible on top of the field.
 
 Run it with the art toolchain, not the ManimGX environment:
 
@@ -38,6 +40,7 @@ FLOOR = 0.02  # ink density in the darkest regions, so the void keeps texture
 COUNT = 13_000  # sprite placements; the run stops early once converged
 SAMPLE_STEP = 4  # block size of the sampling grid, in pixels
 INK_ALPHA = 1.0  # sprites are placed crisp, not as a fog
+FORCED_HEIGHT = 64  # structure equations, in pixels
 
 # Duotone by local brightness: deep blue shadows, warm taupe midtones, warm
 # paper highlights -- echoes the old nebula background while staying quiet.
@@ -81,7 +84,16 @@ POOL = [
     (r"omega_p : T_p M times dots.c times T_p M -> RR", 1),
 ]
 
+# Cartan's structure equations: formula and the anchor their x is pulled to.
+FORCED = [
+    (r"T^a = d theta^a + omega^a_b and theta^b", (0.0, H / 2)),
+    (r"R^a_b = d omega^a_b + omega^a_c and omega^c_b", (3 * W / 4, H / 2)),
+]
+
 PREAMBLE = "#set page(width: auto, height: auto, margin: 0pt, fill: none)"
+
+
+# --- typesetting -----------------------------------------------------------
 
 
 @functools.lru_cache(maxsize=160)
@@ -117,6 +129,9 @@ def ink_at(source, height_px):
     ) / 255.0
 
 
+# --- density and colour maps ----------------------------------------------
+
+
 def colour_lut():
     """256-entry RGB lookup: brightness -> ink colour."""
     xs = np.array([stop[0] for stop in STOPS])
@@ -136,6 +151,12 @@ def blur(a, radius):
     ) / 255.0
 
 
+def block_mean(a, step):
+    return a.reshape(a.shape[0] // step, step, a.shape[1] // step, step).mean(
+        axis=(1, 3)
+    )
+
+
 def target_density():
     """Portrait brightness as a density map on the full canvas."""
     photo = Image.open(SOURCE).convert("L")
@@ -152,10 +173,24 @@ def target_density():
     return FLOOR + (1.0 - FLOOR) * blur(canvas, 2), x0, y0, width, height
 
 
-def block_mean(a, step):
-    return a.reshape(a.shape[0] // step, step, a.shape[1] // step, step).mean(
-        axis=(1, 3)
+# --- placement -------------------------------------------------------------
+
+
+def sample_position(rng, grid):
+    """Draw a canvas position, weighted by the current deficit map."""
+    cell = rng.choice(grid.size, p=grid.ravel())
+    row, column = np.divmod(cell, grid.shape[1])
+    return (
+        int(column * SAMPLE_STEP + rng.integers(0, SAMPLE_STEP)),
+        int(row * SAMPLE_STEP + rng.integers(0, SAMPLE_STEP)),
     )
+
+
+def paste(canvas, ink, x, y, colour, alpha=1.0):
+    """Composite one sprite onto the canvas (alpha-over) at (x, y)."""
+    a = (ink * alpha)[..., None]
+    view = canvas[y:y + ink.shape[0], x:x + ink.shape[1]]
+    view[:] = view * (1.0 - a) + colour * a
 
 
 def main():
@@ -163,6 +198,7 @@ def main():
     lut = colour_lut()
 
     target, px0, py0, pw, ph = target_density()
+
     # Colour driver: the portrait's own brightness, softly blurred.
     brightness = np.zeros((H, W), dtype=np.float64)
     brightness[py0:py0 + ph, px0:px0 + pw] = np.asarray(
@@ -177,21 +213,15 @@ def main():
     detail = np.abs(target - blur(target, 5))
 
     weighted = [source for source, weight in POOL for _ in range(weight)]
-    base = {source: sprite(source, 600) for source, _ in POOL}
-    aspect = {source: base[source].shape[1] / base[source].shape[0]
-              for source, _ in POOL}
+    aspect = {}
+    for source, _ in POOL:
+        mask = sprite(source, 600)
+        aspect[source] = mask.shape[1] / mask.shape[0]
     compact = [source for source, _ in POOL if aspect[source] <= 7]
 
     coverage = np.zeros((H, W), dtype=np.float64)
     canvas = np.empty((H, W, 3), dtype=np.float64)
     canvas[:] = BACK
-
-    # Cartan's structure equations go in last, at anchor size, so nothing
-    # covers them and they stay legible somewhere in the field.
-    forced = [
-        (r"T^a = d theta^a + omega^a_b and theta^b",(W/4,H/2)),
-        (r"R^a_b = d omega^a_b + omega^a_c and omega^c_b",(3*W/4,H/2)),
-    ]
 
     grid = None
     for i in range(COUNT):
@@ -212,23 +242,18 @@ def main():
         share = i / COUNT
         u = rng.random()
         if share < 0.04:  # rare large anchors
-            lo, hi = np.log(44), np.log(88)
-            source = compact[rng.integers(len(compact))]
+            lo, hi, pool = np.log(44), np.log(88), compact
         elif share < 0.32:
-            lo, hi = np.log(20), np.log(40)
-            source = weighted[rng.integers(len(weighted))]
+            lo, hi, pool = np.log(20), np.log(40), weighted
         else:
-            lo, hi = np.log(9), np.log(20)
-            source = weighted[rng.integers(len(weighted))]
+            lo, hi, pool = np.log(9), np.log(20), weighted
+        source = pool[rng.integers(len(pool))]
         height_px = int(round(float(np.exp(lo + u * (hi - lo)))))
 
         # Try a few candidates, keep the one that fits the local deficit best.
         best = None
         for _ in range(6):
-            cell = rng.choice(grid.size, p=grid.ravel())
-            gy_cell, gx_cell = np.divmod(cell, grid.shape[1])
-            x = int(gx_cell * SAMPLE_STEP + rng.integers(0, SAMPLE_STEP))
-            y = int(gy_cell * SAMPLE_STEP + rng.integers(0, SAMPLE_STEP))
+            x, y = sample_position(rng, grid)
             ink = ink_at(source, height_px)
             if ink is None:
                 continue
@@ -247,43 +272,37 @@ def main():
         tone = lut[int(np.clip(
             brightness[y:y + height_px, x:x + ink.shape[1]].mean() * 255, 0, 255
         ))]
-        colour = tone * (0.85 + 0.3 * rng.random()) + rng.normal(0, 7, 3)
-        colour = np.clip(colour, 0, 255)
+        colour = np.clip(
+            tone * (0.85 + 0.3 * rng.random()) + rng.normal(0, 7, 3), 0, 255
+        )
 
-        a = (ink * alpha)[..., None]
-        view = canvas[y:y + height_px, x:x + ink.shape[1]]
-        view[:] = view * (1.0 - a) + colour * a
+        paste(canvas, ink, x, y, colour, alpha)
         coverage[y:y + height_px, x:x + ink.shape[1]] += ink * alpha
 
-    for (source,(x0,y0)) in forced:
+    # Cartan's structure equations go in last, at anchor size, so nothing
+    # covers them and they stay legible on top of the field.
+    for source, (anchor_x, anchor_y) in FORCED:
         best = None
-        fallback = None
         for _ in range(10):
-            cell = rng.choice(grid.size, p=grid.ravel())
-            gy_cell, gx_cell = np.divmod(cell, grid.shape[1])
-            x = int((gx_cell * SAMPLE_STEP + rng.integers(0, SAMPLE_STEP))*0.3 + 0.7*x0)
-            y = int((gy_cell * SAMPLE_STEP + rng.integers(0, SAMPLE_STEP))*0.8 + 0.2*y0)
-            ink = ink_at(source, 64)
+            x, y = sample_position(rng, grid)
+            x = int(x * 0.3 + 0.7 * anchor_x)
+            y = int(y * 0.8 + 0.2 * anchor_y)
+            ink = ink_at(source, FORCED_HEIGHT)
             if ink is None:
                 continue
             x = min(max(x, 0), W - ink.shape[1])
-            y = min(max(y, 0), H - 64)
-            deficit = target[y:y + 64, x:x + ink.shape[1]].mean() - coverage[
-                y:y + 64, x:x + ink.shape[1]
-            ].mean()
-            candidate = (deficit, ink, x, y)
-            if fallback is None or deficit > fallback[0]:
-                fallback = candidate
+            y = min(max(y, 0), H - FORCED_HEIGHT)
+            deficit = target[y:y + FORCED_HEIGHT, x:x + ink.shape[1]].mean() - (
+                coverage[y:y + FORCED_HEIGHT, x:x + ink.shape[1]].mean()
+            )
             if best is None or deficit > best[0]:
-                best = candidate
-        deficit, ink, x, y = best or fallback
+                best = (deficit, ink, x, y)
+        deficit, ink, x, y = best
         tone = lut[int(np.clip(
-            brightness[y:y + 64, x:x + ink.shape[1]].mean() * 255, 0, 255
+            brightness[y:y + FORCED_HEIGHT, x:x + ink.shape[1]].mean() * 255, 0, 255
         ))]
         colour = np.clip(tone * 1.05 + rng.normal(0, 5, 3), 0, 255)
-        a = ink[..., None]
-        view = canvas[y:y + 64, x:x + ink.shape[1]]
-        view[:] = view * (1.0 - a) + colour * a
+        paste(canvas, ink, x, y, colour)
         print(f"forced source at ({x}, {y})")
 
     residual = np.maximum(target - coverage, 0).mean()
