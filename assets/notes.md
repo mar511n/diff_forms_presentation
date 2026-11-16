@@ -11,7 +11,12 @@ $$
 
 $\boxed{\Rightarrow\text{useful for physics in GR, EM}}$
 
-**Visualization**: set of machines at each point on the manifold, that take $k$ vectors and spit out a number. (Interpretation as integrands over curves, surfaces, volumes (manifolds) later)
+**Visualization**: set of machines at each point on the manifold, that take $k$ vectors and spit out a number.
+| differential form | manifold embedded in | interpretation |
+| --- | --- | --- |
+| $k$ | $k=n$ | number of dots inside an infinitesimal parallelpiped spanned by $k$-vectors |
+| $1$ | $n\neq 1$ | number of crossings an infinitesimal vector has with an $(n-1)$-dimensional hyperplane |
+| $k$ | $n>k$ | number of crossings a parallelpiped of vectors has with an $(n-k)$-dimensional hyperplane |
 
 # Wedge product $\wedge$
 The wedge product between a $k$-form $\alpha$ and an $\ell$-form $\beta$ can be defined pointwise by its action on vectors of the tangent space:
@@ -25,7 +30,7 @@ $$
 (\alpha \wedge \beta)(v_0,\dots,v_k) = \sum_{i=0}^k (-1)^i \alpha(v_i) \beta(v_0,\dots,v_{i-1},v_{i+1},\dots,v_k).
 $$
 
-**Visualization**: TBD
+**Visualization**: The resulting differential form is the intersection of the hyperplanes of the product differential forms. Two $1$-forms $dx$ and $dy$ lead to a $2$-form $dx\wedge dy$, which is a bunch of lines in $z$-direction.
 
 # Exterior derivative $d$
 The exterior derivative is an operation
@@ -234,6 +239,8 @@ d\alpha |_{x} (v_0, \dots, v_k) = \int_0^1 \frac{d}{dt}\left(t^{k+1} \beta|_{tx}
 = \beta|_{x}(v_0,\dots,v_k),
 $$
 completing the proof.
+
+**Visualization**: TBD
 
 # Applications
 - [de Rham cohomology]
