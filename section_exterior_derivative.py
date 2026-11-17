@@ -12,10 +12,14 @@ else:
 
 
 class ExteriorDerivativeSection(_SectionBase):
-    PAGE = 4
+    PAGE = 6
     TITLE = r"Exterior derivative"
+
+    def play_ext_deriv(self):
+        self.nslide()
 
 
 class ExteriorDerivativePreview(ExteriorDerivativeSection, DeckScene):
     def construct(self) -> None:
         self.prepare_section(ExteriorDerivativeSection)
+        self.play_ext_deriv()

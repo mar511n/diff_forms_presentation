@@ -12,10 +12,14 @@ else:
 
 
 class WedgeSection(_SectionBase):
-    PAGE = 3
+    PAGE = 5
     TITLE = r"Wedge product"
+    
+    def play_wedge(self):
+        self.nslide()
 
 
 class WedgePreview(WedgeSection, DeckScene):
     def construct(self) -> None:
         self.prepare_section(WedgeSection)
+        self.play_wedge()

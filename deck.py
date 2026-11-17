@@ -9,6 +9,12 @@ recreates the same state with `prepare_section` and runs only its own animations
 
 import manimgx as m
 
+class Write(m.Write):
+    def __init__(self, vmobject, reverse=False, **kwargs):
+        kwargs.setdefault("run_time", 1.0)
+        super().__init__(vmobject, reverse=reverse, **kwargs)
+m.Write = Write
+
 DARK_MODE: bool = True
 LIGHT_MODE: bool = False  # experimental
 Theme = DARK_MODE
@@ -246,11 +252,10 @@ class DeckScene(m.ThreeDScene):
         print(f"{self.slide_number_val}:{title}")
         if cleanup:
             ncos = self.get_non_canvas_mobjs()
-            self.play(
-                self.next_slide_number_animation(),
-                self.next_slide_title_animation(title),
-                m.FadeOut(*ncos, shift=m.LEFT),
-            )
+            anims = [self.next_slide_number_animation(), self.next_slide_title_animation(title)]
+            if len(ncos) > 0:
+                anims.append(m.FadeOut(*ncos, shift=m.LEFT))
+            self.play(*anims)
             for nco in ncos:
                 del nco
         else:

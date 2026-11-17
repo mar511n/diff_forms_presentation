@@ -25,6 +25,7 @@ class FormsSection(_SectionBase):
     TITLE = r"Differential $k$-form $omega in Omega^k (M)$"
 
     def play_forms(self):
+        self.nslide()
         points = self.get_lines(self.slide_title, """
         - smooth assignment $p arrow.r.long.bar omega|_p$ for a point $p$ on the Manifold $M$
         - $omega|_p$ is an _alternating_ *$k$-linear* map $omega|_p: underbrace(T_p M times dots.c times T_p M, k " times") arrow.r.long RR$
