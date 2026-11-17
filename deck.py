@@ -51,10 +51,14 @@ PresentationInfo = r"""Marvin Henke - 24.11.2026 \
 Supervisor: Dr. Nikodem Szpak \
 Group seminar AG König"""
 PresentationContactInfo = r'marvin.henke\@stud.uni-due.de'
-PresentationContents = """- differential forms
+PresentationContents = """- Differential forms
 - wedge product
+- exterior derivative
 - generalized Stokes theorem
 - Poincaré lemma
+- Cartan structure equations
+- defect geometry
+- (Maxwell/Einstein eq)
 """
 
 
@@ -133,6 +137,8 @@ class DeckScene(m.ThreeDScene):
     def start_section(self, section):
         """Animate the transition into a section, then check its page number."""
         self.setup_new_slide(section.TITLE, cleanup=True)
+        #   A section starts flat; a three-dimensional one sets its own view.
+        self.set_camera_orientation(phi=0, theta=-90 * m.DEGREES)
         assert self.slide_number_val == section.PAGE, (
             f"{section.__name__}: deck is on page {self.slide_number_val}, "
             f"but the section declares PAGE = {section.PAGE}"

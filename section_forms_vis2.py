@@ -35,7 +35,7 @@ class FormsVis2Section(_SectionBase):
             self.nslide()
 
         self.set_camera_orientation(
-            phi=65 * m.DEGREES, theta=-55 * m.DEGREES, zoom=0.85
+            phi=65 * m.DEGREES, theta=-25 * m.DEGREES, zoom=1.0, frame_center=(0,0,m.config.frame_height*0.09)
         )
 
         label_size = CONTENT_FONT_SIZE
@@ -60,9 +60,9 @@ class FormsVis2Section(_SectionBase):
                     [2.2, y, -1.35],
                     [2.2, y, 1.35],
                     [-2.2, y, 1.35],
-                    fill_color=m.BLUE,
-                    fill_opacity=0.12,
-                    stroke_color=m.BLUE,
+                    fill_color=m.RED,
+                    fill_opacity=0.5,
+                    stroke_color=m.RED,
                     stroke_width=1.5,
                 )
                 for y in plane_ys
@@ -72,21 +72,22 @@ class FormsVis2Section(_SectionBase):
         def gamma(t):
             return np.array(
                 [
-                    1.1 * np.cos(m.TAU * t),
-                    -2.2 + 4.4 * t,
-                    0.9 * np.sin(m.TAU * t),
+                    1.1 * np.cos(m.TAU * t + m.PI),
+                    -2 + 4 * t,
+                    1.1 * np.sin(m.TAU * t + m.PI),
                 ]
             )
 
         curve = m.ParametricFunction(
-            gamma, t_range=[0.0, 1.0, 0.01], color=m.YELLOW, stroke_width=4
+            gamma, t_range=[-0.05, 1.05, 0.01], color=m.BLUE, stroke_width=4
         )
         intersections = m.VGroup(
             *[
-                m.Dot3D(gamma((y + 2.2) / 4.4), radius=0.07, color=m.RED)
+                m.Dot3D(gamma((y + 2) / 4), radius=0.07, color=m.YELLOW)
                 for y in plane_ys
             ]
         )
+        
 
         self.play(m.Write(label1))
         self.play(
@@ -96,22 +97,15 @@ class FormsVis2Section(_SectionBase):
             )
         )
         self.nslide()
-
         self.play(m.Create(curve))
         self.nslide()
-
-        self.play(m.FadeOut(planes), m.FadeIn(intersections))
+        self.play(m.FadeIn(intersections))
         self.nslide()
-
-        self.play(
-            m.FadeOut(curve),
-            m.FadeOut(intersections),
-            m.ReplacementTransform(label1, label2),
-        )
+        self.play(m.FadeOut(planes))
         self.nslide()
 
         #   2-form: the level sets of dx and dy are lines in the z direction.
-        grid = np.linspace(-2.0, 2.0, 5)
+        grid = np.linspace(-2.0, 2.0, 3)
 
         def plane_z(x, y):
             return 0.28 * x + 0.16 * y
@@ -121,17 +115,10 @@ class FormsVis2Section(_SectionBase):
                 m.Line3D(
                     [x, y, -1.35],
                     [x, y, 1.35],
-                    thickness=0.012,
+                    thickness=0.02,
                     resolution=6,
-                    color=FRONTCOL,
+                    color=m.RED,
                 )
-                for x in grid
-                for y in grid
-            ]
-        )
-        base_dots = m.VGroup(
-            *[
-                m.Dot3D([x, y, -1.35], radius=0.03, color=FRONTCOL)
                 for x in grid
                 for y in grid
             ]
@@ -141,10 +128,10 @@ class FormsVis2Section(_SectionBase):
             [2.2, -2.2, plane_z(2.2, -2.2)],
             [2.2, 2.2, plane_z(2.2, 2.2)],
             [-2.2, 2.2, plane_z(-2.2, 2.2)],
-            fill_color=m.TEAL,
-            fill_opacity=0.18,
-            stroke_color=m.TEAL,
-            stroke_width=2,
+            fill_color=m.BLUE,
+            fill_opacity=0.5,
+            stroke_color=m.BLUE,
+            stroke_width=1.5,
         )
         surface_cuts = m.VGroup(
             *[
@@ -155,21 +142,19 @@ class FormsVis2Section(_SectionBase):
         )
 
         self.play(
+            m.FadeOut(curve),
+            m.FadeOut(intersections),
+            m.ReplacementTransform(label1, label2),
             m.LaggedStart(
-                *[m.Create(line) for line in lines], lag_ratio=0.02, run_time=2
+                *[m.FadeIn(line) for line in lines], lag_ratio=0.02, run_time=2
             ),
-            m.FadeIn(base_dots),
         )
         self.nslide()
-
         self.play(m.DrawBorderThenFill(surface))
         self.nslide()
-
-        self.play(
-            m.FadeOut(lines),
-            m.FadeOut(base_dots),
-            m.FadeIn(surface_cuts),
-        )
+        self.play(m.FadeIn(surface_cuts))
+        self.nslide()
+        self.play(m.FadeOut(lines))
         self.nslide()
         
 
