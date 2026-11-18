@@ -39,9 +39,8 @@ class FormsSection(_SectionBase):
             r"- Interpretation: Different machines "
             r'#box[$omega$]<omega>$|_p (manimgrp("v1", v_1), manimgrp("v2", v_2), v_3) '
             r'manimgrp("eq", eq) #h(2.6em)$',
-            font_size=CONTENT_FONT_SIZE,
             typst_preamble=(
-                typst_preamble(CONTENT_FONT_SIZE)
+                typst_preamble()
                 + "\n#let manimgrp(lbl, body) = [#box(math.inline(body)) #label(lbl)]"
             ),
         )
@@ -88,8 +87,7 @@ class FormsSection(_SectionBase):
         color_sel = m.YELLOW
         vec_label = m.Typst(
             r'(#box[$arrow.tl$]<a1>,#box[$arrow.r$]<a2>,$arrow.b$)',
-            font_size=CONTENT_FONT_SIZE,
-            typst_preamble=typst_preamble(CONTENT_FONT_SIZE),
+            typst_preamble=typst_preamble(),
         )
         vec_label.next_to(gear_sel, m.RIGHT, buff=0.2)
         self.camera.add_fixed_in_frame_mobjects(vec_label)
@@ -107,7 +105,7 @@ class FormsSection(_SectionBase):
         self.play(m.Write(machine_bullet))
         self.nslide()
         self.play(m.DrawBorderThenFill(region))
-        self.play(m.FadeIn(gears[0]), m.FadeIn(gears[1]), m.FadeIn(gears[2]))
+        self.play(m.Create(gears[0]), m.Create(gears[1]), m.Create(gears[2]))
         self.nslide()
 
         #   Select the machine: flash gear and omega, and recolor omega

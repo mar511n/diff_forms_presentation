@@ -60,8 +60,7 @@ class TitleSection(_SectionBase):
 
         presentation_info = m.Typst(
             PresentationInfo,
-            font_size=CONTENT_FONT_SIZE,
-            typst_preamble=typst_preamble(CONTENT_FONT_SIZE),
+            typst_preamble=typst_preamble(),
         )
         presentation_info.next_to(
             TextBox.get_corner(m.DL), m.RIGHT + m.UP, m.MED_SMALL_BUFF

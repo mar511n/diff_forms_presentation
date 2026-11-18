@@ -1,16 +1,13 @@
 """Local differential forms visualization section."""
 
-from typing import TYPE_CHECKING, NamedTuple, Tuple
+from typing import TYPE_CHECKING
 
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.path import Path
 
 import manimgx as m
 
 from deck import (
     CONTENT_FONT_SIZE,
-    FRONTCOL,
     DeckScene,
     typst_preamble,
 )
@@ -99,7 +96,7 @@ class FormsVis2Section(_SectionBase):
         self.nslide()
         self.play(m.Create(curve))
         self.nslide()
-        self.play(m.FadeIn(intersections))
+        self.play(m.Create(intersections))
         self.nslide()
         self.play(m.FadeOut(planes))
         self.nslide()
@@ -142,19 +139,19 @@ class FormsVis2Section(_SectionBase):
         )
 
         self.play(
-            m.FadeOut(curve),
-            m.FadeOut(intersections),
+            m.Uncreate(curve),
+            m.Uncreate(intersections),
             m.ReplacementTransform(label1, label2),
             m.LaggedStart(
-                *[m.FadeIn(line) for line in lines], lag_ratio=0.02, run_time=2
+                *[m.Create(line) for line in lines], lag_ratio=0.02, run_time=2
             ),
         )
         self.nslide()
         self.play(m.DrawBorderThenFill(surface))
         self.nslide()
-        self.play(m.FadeIn(surface_cuts))
+        self.play(m.Create(surface_cuts))
         self.nslide()
-        self.play(m.FadeOut(lines))
+        self.play(m.Uncreate(lines))
         self.nslide()
         
 

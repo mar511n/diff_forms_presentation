@@ -272,7 +272,7 @@ def make_one_form_visual(dot_mass=0.08):
         )
     )
 
-    preamble = typst_preamble(CONTENT_FONT_SIZE)
+    preamble = typst_preamble()
     x0_number = m.DecimalNumber(
         x0.get_value(), num_decimal_places=1, font_size=0.8*CONTENT_FONT_SIZE
     )
@@ -284,7 +284,7 @@ def make_one_form_visual(dot_mass=0.08):
         num_decimal_places=1,
         font_size=0.8*CONTENT_FONT_SIZE,
     )
-    formula_orig = m.MathTypst("(f(x) d x)(v)", font_size=CONTENT_FONT_SIZE, typst_preamble=preamble)
+    formula_orig = m.MathTypst("(f(x) d x)(v)", typst_preamble=preamble)
     formula = m.VGroup(
         m.MathTypst("(f(", font_size=0.8*CONTENT_FONT_SIZE, typst_preamble=preamble),
         x0_number,
@@ -303,11 +303,10 @@ def make_one_form_visual(dot_mass=0.08):
         )
     )
 
-    label = m.Typst(r"$RR$", typst_preamble=typst_preamble(CONTENT_FONT_SIZE)).next_to(x_axis.get_right(), buff=m.SMALL_BUFF)
+    label = m.Typst(r"$RR$", typst_preamble=typst_preamble()).next_to(x_axis.get_right(), buff=m.SMALL_BUFF)
     f_label = m.Typst(
         r"$f(x)$",
-        font_size=CONTENT_FONT_SIZE,
-        typst_preamble=typst_preamble(CONTENT_FONT_SIZE),
+        typst_preamble=typst_preamble(),
     ).next_to(y_axis.get_end(), m.DR, buff=0.12)
     vg = m.VGroup(x_axis, y_axis, label, f_label, graph, dots, interval)
 
@@ -427,7 +426,7 @@ def make_two_form_visual(dot_mass=0.02):
     parallelogram = m.Polygon(
         *parallelogram_vertices(),
         fill_color=m.RED,
-        fill_opacity=0.12,
+        fill_opacity=0,
         stroke_color=m.RED,
         stroke_width=4,
         z_index=3,
@@ -454,13 +453,13 @@ def make_two_form_visual(dot_mass=0.02):
     colorbar_label = m.Typst(
         r"$g(x,y)$",
         font_size=CONTENT_FONT_SIZE,
-        typst_preamble=typst_preamble(CONTENT_FONT_SIZE),
+        typst_preamble=typst_preamble(),
     ).next_to(colorbar, m.RIGHT, buff=0.12)
 
-    label = m.Typst(r"$M subset RR^2$", typst_preamble=typst_preamble(CONTENT_FONT_SIZE)).next_to(border.get_bottom(), buff=m.SMALL_BUFF)
+    label = m.Typst(r"$M subset RR^2$", typst_preamble=typst_preamble()).next_to(border.get_bottom(), buff=m.SMALL_BUFF)
 
     #   The title substitutes the position, the two vectors and the result.
-    formula_orig = m.MathTypst("(g(x,y) d x and d y)(v,u)", font_size=CONTENT_FONT_SIZE, typst_preamble=typst_preamble(CONTENT_FONT_SIZE))
+    formula_orig = m.MathTypst("(g(x,y) d x and d y)(v,u)", font_size=CONTENT_FONT_SIZE, typst_preamble=typst_preamble())
     formula = m.MathTypst(
         r"(g({{ -0.0 : x0 }}, {{ -0.0 : y0 }}) d x and d y)"
         r"(vec({{ 0.00 : vx }}, {{ 0.00 : vy }}),"
@@ -577,13 +576,13 @@ class FormsVisSection(_SectionBase):
 
         visuals = m.VGroup(left.group, right.group)
         self.camera.add_fixed_in_frame_mobjects(visuals)
-        self.play(m.Write(left.x_axis),m.Write(left.formula_orig))
+        self.play(m.Create(left.x_axis),m.Write(left.formula_orig))
         self.nslide()
-        self.play(m.Write(left.y_axis),m.Write(left.graph))
+        self.play(m.Create(left.y_axis),m.Create(left.graph))
         self.nslide()
-        self.play(m.Write(left.dots))
+        self.play(m.Create(left.dots))
         self.nslide()
-        self.play(m.Write(left.interval),m.ReplacementTransform(left.formula_orig, left.formula))
+        self.play(m.Create(left.interval),m.ReplacementTransform(left.formula_orig, left.formula))
         self.nslide()
 
         #   Vary v_x, keeping x_0 fixed.
@@ -597,13 +596,13 @@ class FormsVisSection(_SectionBase):
         self.play(left.x0.animate.set_value(-1.0), run_time=4)
         self.nslide()
 
-        self.play(m.Write(right.region), m.Write(right.formula_orig))
+        self.play(m.Create(right.region), m.Write(right.formula_orig))
         self.nslide()
-        self.play(m.Write(right.colorbar),m.Write(right.image))
+        self.play(m.FadeIn(right.colorbar),m.FadeIn(right.image))
         self.nslide()
-        self.play(m.Write(right.dots))
+        self.play(m.Create(right.dots))
         self.nslide()
-        self.play(m.Write(right.parallelogram),m.ReplacementTransform(right.formula_orig,m.VGroup(right.formula,*right.numbers)))
+        self.play(m.Create(right.parallelogram),m.ReplacementTransform(right.formula_orig,m.VGroup(right.formula,*right.numbers)))
         self.nslide()
 
         #   Vary u, keeping p_0 fixed.

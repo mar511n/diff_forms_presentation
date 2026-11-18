@@ -32,11 +32,13 @@ m.config.background_color = BACKCOL
 MAX_TEXT_WIDTH = m.config.frame_width - 2 * m.DEFAULT_MOBJECT_TO_EDGE_BUFFER
 
 
-def typst_preamble(font_size=CONTENT_FONT_SIZE):
+def typst_preamble(font_size=CONTENT_FONT_SIZE, leading="1em", display_math=False):
     """Typst page setup that wraps text at MAX_TEXT_WIDTH scene units."""
     width_pt = MAX_TEXT_WIDTH / (font_size * m.SCALE_FACTOR_PER_FONT_POINT)
     return (
-        f"#set page(width: {width_pt:.3f}pt, height: auto, margin: 0pt, fill: none)"
+        f"\n#set page(width: {width_pt:.3f}pt, height: auto, margin: 0pt, fill: none)"
+        + ("\n#show math.equation.where(block: false): it => math.display(it)" if display_math else "")
+        + f"\n#set par(leading: {leading})"
     )
 
 
@@ -165,7 +167,7 @@ class DeckScene(m.ThreeDScene):
         self.add(self.back_rects)
         self.canvas_objs.append(self.back_rects)
 
-    def get_lines(self, anchor, points):
+    def get_lines(self, anchor, points, buff=m.MED_LARGE_BUFF, font_size=CONTENT_FONT_SIZE, preamble=typst_preamble()):
         """Place a Typst object below `anchor` and return its lines.
 
         `points` is Typst code. Each non-empty newline-separated source line becomes
@@ -198,10 +200,10 @@ class DeckScene(m.ThreeDScene):
 
         text = m.Typst(
             marked,
-            font_size=CONTENT_FONT_SIZE,
-            typst_preamble=typst_preamble(CONTENT_FONT_SIZE),
+            font_size=font_size,
+            typst_preamble=preamble,
         )
-        text.next_to(anchor, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT)
+        text.next_to(anchor, m.DOWN, buff=buff, aligned_edge=m.LEFT)
         try:
             breaks = {id(part) for part in text.select(marker_label).submobjects}
         except KeyError:  # no marker survived: return the object as one line
@@ -260,6 +262,8 @@ class DeckScene(m.ThreeDScene):
             ncos = self.get_non_canvas_mobjs()
             anims = [self.next_slide_number_animation(), self.next_slide_title_animation(title)]
             if len(ncos) > 0:
+                for mobj in ncos:
+                    mobj.clear_updaters()
                 anims.append(m.FadeOut(*ncos, shift=m.LEFT))
             self.play(*anims)
             for nco in ncos:

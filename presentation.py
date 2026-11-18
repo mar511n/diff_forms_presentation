@@ -12,7 +12,8 @@ from section_forms_vis import FormsVisSection
 from section_forms_vis2 import FormsVis2Section
 from section_wedge import WedgeSection
 from section_exterior_derivative import ExteriorDerivativeSection
-
+from section_exterior_derivative2 import ExteriorDerivative2Section
+from section_gen_stokes import GenStokesSection
 
 
 class Presentation(
@@ -23,6 +24,8 @@ class Presentation(
     FormsVis2Section,
     WedgeSection,
     ExteriorDerivativeSection,
+    ExteriorDerivative2Section,
+    GenStokesSection,
     DeckScene,
 ):
     def construct(self) -> None:
@@ -38,3 +41,7 @@ class Presentation(
         self.play_wedge()
         self.start_section(ExteriorDerivativeSection)
         self.play_ext_deriv()
+        self.start_section(ExteriorDerivative2Section)
+        self.play_ext_deriv2()
+        self.start_section(GenStokesSection)
+        self.play_gen_stokes()
