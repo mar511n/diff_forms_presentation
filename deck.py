@@ -7,7 +7,10 @@ persist between sections. A section file also defines a preview scene that
 recreates the same state with `prepare_section` and runs only its own animations.
 """
 
+import re
+
 import manimgx as m
+
 
 class Write(m.Write):
     def __init__(self, vmobject, reverse=False, **kwargs):
@@ -31,14 +34,31 @@ m.config.background_color = BACKCOL
 # so the page width in points depends on the font size.
 MAX_TEXT_WIDTH = m.config.frame_width - 2 * m.DEFAULT_MOBJECT_TO_EDGE_BUFFER
 
+def split_typst_lines(mobj, count=2):
+    """Split a typeset object into its `count` visual lines, top to bottom.
 
-def typst_preamble(font_size=CONTENT_FONT_SIZE, leading="1em", display_math=False):
+    The parts are grouped by vertical position: the widest `count - 1` gaps between
+    neighbouring parts are the line boundaries. The groups hold the original parts, not
+    copies, so a multi-line `&`-aligned equation keeps its alignment while the lines can
+    be written one at a time. `count` must be the object's number of lines.
+    """
+    parts = sorted(mobj.submobjects, key=lambda part: part.get_center()[1])
+    ys = [part.get_center()[1] for part in parts]
+    widest = sorted(range(len(ys) - 1), key=lambda i: ys[i + 1] - ys[i], reverse=True)
+    boundaries = sorted((ys[i] + ys[i + 1]) / 2 for i in widest[: count - 1])
+    groups = [m.VGroup() for _ in range(count)]
+    for part, y in zip(parts, ys):
+        groups[sum(y < boundary for boundary in boundaries)].add(part)
+    return groups
+
+
+def typst_preamble(font_size=CONTENT_FONT_SIZE, leading="", display_math=False):
     """Typst page setup that wraps text at MAX_TEXT_WIDTH scene units."""
     width_pt = MAX_TEXT_WIDTH / (font_size * m.SCALE_FACTOR_PER_FONT_POINT)
     return (
         f"\n#set page(width: {width_pt:.3f}pt, height: auto, margin: 0pt, fill: none)"
         + ("\n#show math.equation.where(block: false): it => math.display(it)" if display_math else "")
-        + f"\n#set par(leading: {leading})"
+        + (f"\n#set par(leading: {leading})" if leading != "" else "")
     )
 
 
@@ -53,7 +73,8 @@ PresentationInfo = r"""Marvin Henke - 24.11.2026 \
 Supervisor: Dr. Nikodem Szpak \
 Group seminar AG König"""
 PresentationContactInfo = r'marvin.henke\@stud.uni-due.de'
-PresentationContents = """- Differential forms
+PresentationContents = """
+- Differential forms
 - wedge product
 - exterior derivative
 - generalized Stokes theorem
@@ -62,6 +83,34 @@ PresentationContents = """- Differential forms
 - defect geometry
 - (Maxwell/Einstein eq)
 """
+
+
+def _ends_in_math(line, in_math):
+    """Whether `line` leaves a `$...$` math block open, given whether it starts in one."""
+    escaped = False
+    for char in line:
+        if escaped:
+            escaped = False
+        elif char == "\\":
+            escaped = True
+        elif char == "$":
+            in_math = not in_math
+    return in_math
+
+
+# Typst markup that starts a block, and so a new line, by itself.
+_BLOCK_START = re.compile(r"[-+/]\s|=+\s|\d+[.)]\s")
+
+
+def _starts_block(line, in_math):
+    """Whether `line` begins a Typst block: a list item, a term, a heading or an enum."""
+    return not in_math and _BLOCK_START.match(line.lstrip()) is not None
+
+
+def _ends_with_break(line):
+    """Whether `line` ends with a Typst `\\` line break, an odd number of them."""
+    stripped = line.rstrip()
+    return (len(stripped) - len(stripped.rstrip("\\"))) % 2 == 1
 
 
 class DeckScene(m.ThreeDScene):
@@ -168,45 +217,107 @@ class DeckScene(m.ThreeDScene):
         self.canvas_objs.append(self.back_rects)
 
     def get_lines(self, anchor, points, buff=m.MED_LARGE_BUFF, font_size=CONTENT_FONT_SIZE, preamble=typst_preamble()):
-        """Place a Typst object below `anchor` and return its lines.
+        """Place a Typst object below `anchor` and return its groups.
 
-        `points` is Typst code. Each non-empty newline-separated source line becomes
-        one group: the function creates a single Typst object and returns an ordered
-        list of references to its lines, which can e.g. be used to Write the lines one
-        at a time with Write(lines[0]), ...
+        `points` is Typst code. The function creates one Typst object and returns its
+        groups in order, e.g. to Write them one at a time with Write(lines[0]), ...
+        Empty source lines are ignored.
 
-        A zero-size transparent marker is appended to every non-empty source line. The
-        markers are parts of the Typst object in document order, so the object's parts
-        can be split at them without measuring positions, and their labels let
-        `select` find them. Lines are the source's newline-separated lines (even where
-        Typst joins them into one visual line), and lines with no visible parts are
-        omitted. Each non-empty line should be complete Typst markup: a construct that
-        spans several source lines would receive a marker inside itself.
+        A source line break does one of three things:
+
+        - it starts a new group on a new line; the `\\` Typst needs is inserted for you,
+          also inside `$...$` math, where `&` alignment points stay aligned,
+        - it keeps the next line in the same group but breaks the line visibly, when the
+          line ends with `\\`,
+        - it keeps the next line in the same group without a visible break, when that
+          line is indented deeper than the line that started the group; Typst then wraps
+          or joins the text.
+
+        A line that starts a Typst block (`- `, `+ `, `/ `, `= `, `1. `) always starts a
+        new group, because Typst starts those on a new line by itself.
+
+        A zero-size transparent marker is inserted at every group boundary. The markers
+        are parts of the Typst object at known byte offsets in the code, so its parts can
+        be split there without measuring positions. Every line should be complete Typst
+        markup, except that one `$...$` math block may span several lines.
         """
-        if not any(line.strip() for line in points.split("\n")):
+        # Every non-empty line, with its indent and whether it starts inside math.
+        lines = []
+        in_math = False
+        for line in points.split("\n"):
+            stripped = line.lstrip()
+            if stripped:
+                lines.append((line, len(line) - len(stripped), in_math, stripped))
+            in_math = _ends_in_math(line, in_math)
+        if not lines:
             return []
 
-        # A label that the points' own labels cannot collide with.
-        marker_label = "_get_lines_break"
-        while f"<{marker_label}>" in points:
-            marker_label += "_"
-        marker = (
-            "#box(width: 0pt, height: 0pt, clip: true)"
-            f'[#text(fill: rgb("#00000000"), size: 0.1pt)[|]] <{marker_label}>'
-        )
-        marked = "\n".join(
-            line + marker if line.strip() else line for line in points.split("\n")
-        )
+        # A line continues the current group if the group's last line ends with `\` or
+        # the line is indented deeper than the line that started the group. A block
+        # starts a new group, whatever its indent.
+        groups: list[tuple[int, bool, list[str]]] = []
+        for line, indent, starts_in_math, stripped in lines:
+            if groups and not _starts_block(stripped, starts_in_math):
+                first_indent, _, members = groups[-1]
+                if _ends_with_break(members[-1]) or indent > first_indent:
+                    members.append(line)
+                    continue
+            groups.append((indent, starts_in_math, [line]))
 
-        text = m.Typst(
-            marked,
-            font_size=font_size,
-            typst_preamble=preamble,
+        # The marker: a clipped, zero-size box holding one tiny transparent glyph. Its
+        # glyph starts at a known byte offset in the marked code that we record.
+        marker_open = (
+            '#box(width: 0pt, height: 0pt, clip: true)'
+            '[#text(fill: rgb("#00000000"), size: 0.1pt)['
         )
+        marker = marker_open + "|" + "]]"
+
+        marked = []
+        markers = set()  # byte offset of every marker glyph in the marked code
+        offset = 0  # bytes written so far
+
+        def emit(piece):
+            nonlocal offset
+            marked.append(piece)
+            offset += len(piece.encode())
+
+        def emit_marker():
+            markers.add(offset + len(marker_open.encode()))
+            emit(marker)
+
+        for index, (_, _, members) in enumerate(groups):
+            following = groups[index + 1] if index + 1 < len(groups) else None
+            for position, line in enumerate(members):
+                last = position == len(members) - 1
+                if not last:
+                    emit(line + "\n")  # same group: Typst joins or wraps it
+                elif following is None:
+                    emit(line)
+                elif _starts_block(following[2][0], following[1]):
+                    # Typst starts the next block on a new line by itself, so the marker
+                    # ends this line, before a line break the line already ends with.
+                    if _ends_with_break(line):
+                        cut = line.rstrip().rfind("\\")
+                        emit(line[:cut])
+                        emit_marker()
+                        emit(line[cut:] + "\n")
+                    else:
+                        emit(line)
+                        emit_marker()
+                        emit("\n")
+                else:
+                    emit(line if _ends_with_break(line) else line + " \\")
+                    emit("\n")
+                    emit_marker()
+
+        text = m.Typst("".join(marked), font_size=font_size, typst_preamble=preamble)
         text.next_to(anchor, m.DOWN, buff=buff, aligned_edge=m.LEFT)
-        try:
-            breaks = {id(part) for part in text.select(marker_label).submobjects}
-        except KeyError:  # no marker survived: return the object as one line
+        breaks = {
+            id(part)
+            for part in text.submobjects
+            if getattr(part, "node", None) in markers
+        }
+        if not breaks:  # no marker survived: return the object as one group
             return [text]
 
         lines = []
