@@ -1,0 +1,27 @@
+T(X,Y) = nabla_X Y - nabla_Y X - [X,Y]
+nabla_(partial_mu) partial_nu = Gamma^rho #h(0cm)_(mu nu) partial_rho
+nabla_X e_b = omega^a #h(0cm)_b (X) e_a
+R(X,Y) e_b = nabla_X nabla_Y e_b - nabla_Y nabla_X - nabla_([X,Y]) e_b
+d e^a
+d omega^a #h(0cm)_b
+e^a
+omega^a #h(0cm)_b
+b^a = integral.cont_C e^a
+T^a = T^a #h(0cm)_(mu nu) d x^mu and d x^nu
+R^a #h(0cm)_(b mu nu) d x^mu and d x^nu
+g = eta_(a b) e^a times.o e^b
+e^a = (delta^a_mu + partial_mu u^a) d x^mu
+T_p M
+f(x) d x
+g(x,y) d x and d y
+Omega^k (M)
+d^2 = 0
+integral_M d omega = integral_(partial M) omega
+F_x d x + F_y d y + F_z d z
+F_x d y and d z + F_y d z and d x + F_z d x and d y
+integral.double_S (bold(nabla) times bold(F)) dot.c d bold(A) = integral.cont_(partial S) bold(F) dot.c d bold(r)
+integral.triple_V (bold(nabla) dot.c bold(F)) d V = integral.double_(partial V) bold(F) dot.c d bold(A)
+bold(nabla) times bold(F) = 0
+bold(F) = bold(nabla) f
+bold(nabla) dot.c bold(F)
+bold(F) = bold(nabla) times bold(A)

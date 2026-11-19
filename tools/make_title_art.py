@@ -52,11 +52,10 @@ STOPS = [
 
 # (Typst math, weight). Single objects are common, whole equations are rare.
 POOL = [
-    (r"integral", 4), (r"partial", 4), (r"and", 4),
-    (r"star.op", 4),
+    (r"integral", 4), (r"partial", 4), (r"and", 4), (r"star.op", 4),
     (r"bold(nabla)", 4), (r"times", 2), (r"⊕", 1), (r"⊗", 1),
-    (r"Omega", 3), (r"omega", 5), (r"alpha", 4), (r"beta", 4), (r"theta", 4),
-    (r"delta", 3), (r"Sigma", 3), (r"Lambda", 2), (r"eta", 3), (r"RR", 2),
+    (r"Omega", 3), (r"omega", 5), (r"alpha", 2), (r"beta", 2), (r"Gamma", 3),
+    (r"delta", 3), (r"Lambda", 1), (r"eta", 3), (r"RR", 2),
     (r"d omega", 4), (r"d alpha", 3), (r"d beta", 3), (r"d theta", 3),
     (r"d x^i", 2), (r"d x^1", 2), (r"d x^n", 2), (r"d A", 2), (r"d F", 2),
     (r"omega|_p", 2), (r"Omega^k", 3), (r"Omega^k (M)", 2),
@@ -86,8 +85,8 @@ POOL = [
 
 # Cartan's structure equations: formula and the anchor their x is pulled to.
 FORCED = [
-    (r"T^a = d theta^a + omega^a_b and theta^b", (0.0, H / 2)),
-    (r"R^a_b = d omega^a_b + omega^a_c and omega^c_b", (3 * W / 4, H / 2)),
+    (r"T^a = d theta^a + omega^a #h(0cm)_b and theta^b", (0.0, H / 2)),
+    (r"R^a #h(0cm)_b = d omega^a_b + omega^a #h(0cm)_c and omega^c_b", (3 * W / 4, H / 2)),
 ]
 
 PREAMBLE = "#set page(width: auto, height: auto, margin: 0pt, fill: none)"
