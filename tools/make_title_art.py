@@ -54,7 +54,7 @@ STOPS = [
 POOL = [
     (r"integral", 4), (r"partial", 4), (r"and", 4),
     (r"star.op", 4),
-    (r"nabla", 4), (r"times", 2), (r"⊕", 1), (r"⊗", 1),
+    (r"bold(nabla)", 4), (r"times", 2), (r"⊕", 1), (r"⊗", 1),
     (r"Omega", 3), (r"omega", 5), (r"alpha", 4), (r"beta", 4), (r"theta", 4),
     (r"delta", 3), (r"Sigma", 3), (r"Lambda", 2), (r"eta", 3), (r"RR", 2),
     (r"d omega", 4), (r"d alpha", 3), (r"d beta", 3), (r"d theta", 3),

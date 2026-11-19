@@ -74,7 +74,7 @@ Supervisor: Dr. Nikodem Szpak \
 Group seminar AG König"""
 PresentationContactInfo = r'marvin.henke\@stud.uni-due.de'
 PresentationContents = """
-- Differential forms
+- differential forms
 - wedge product
 - exterior derivative
 - generalized Stokes theorem

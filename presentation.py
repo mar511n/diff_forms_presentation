@@ -14,6 +14,8 @@ from section_wedge import WedgeSection
 from section_exterior_derivative import ExteriorDerivativeSection
 from section_exterior_derivative2 import ExteriorDerivative2Section
 from section_gen_stokes import GenStokesSection
+from section_gen_stokes2 import GenStokes2Section
+from section_poincare import PoincareSection
 
 
 class Presentation(
@@ -26,6 +28,8 @@ class Presentation(
     ExteriorDerivativeSection,
     ExteriorDerivative2Section,
     GenStokesSection,
+    GenStokes2Section,
+    PoincareSection,
     DeckScene,
 ):
     def construct(self) -> None:
@@ -45,3 +49,7 @@ class Presentation(
         self.play_ext_deriv2()
         self.start_section(GenStokesSection)
         self.play_gen_stokes()
+        self.start_section(GenStokes2Section)
+        self.play_gen_stokes2()
+        self.start_section(PoincareSection)
+        self.play_poincare()
