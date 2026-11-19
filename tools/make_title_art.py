@@ -1,45 +1,54 @@
 """Generate the title-screen backdrop: Cartan reproduced in formulas.
 
-A pool of short LaTeX/Typst formulas and objects is typeset once (via Typst)
-and then scattered over the canvas at arbitrary positions, sizes and colours,
-greedily filling the regions where the Cartan portrait is bright -- the same
-trick as an ASCII-art generator, but the "characters" are real formulas.
+A pool of short Typst formulas -- the lines of ``tools/formulas.txt`` and the
+subexpressions they are built from -- is typeset once (via Typst) and then
+scattered over the canvas at arbitrary positions, sizes and colours, greedily
+filling the regions where the Cartan portrait is bright -- the same trick as an
+ASCII-art generator, but the "characters" are real formulas.
 Cartan's structure equations are placed last, at anchor size and full opacity,
 so they stay legible on top of the field.
 
 Run it with the art toolchain, not the ManimGX environment:
 
     python -m venv ~/.venvs/title-art
-    ~/.venvs/title-art/bin/pip install typst pillow numpy
+    ~/.venvs/title-art/bin/pip install typst pillow numpy tqdm
     ~/.venvs/title-art/bin/python tools/make_title_art.py
 
 Writes ``assets/title_math_background.png`` (1920x1080), which
 ``section_title.py`` loads as the title background.
+
+Typeset sprites are cached under ``$XDG_CACHE_HOME/cartan-title-art``
+(``~/.cache/cartan-title-art`` by default), so tweaking ``COUNT``, ``SEED`` or
+the placement constants and rerunning is fast; delete that directory to force
+a fresh typeset.
 """
 
 import functools
+import hashlib
 import io
+import os
 from pathlib import Path
 
 import numpy as np
 import typst
+import tqdm
 from PIL import Image, ImageFilter
 
 W, H = 1920, 1080
-SEED = 7
+SEED = 10
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "assets" / "cartan.png"
-DESTINATION = ROOT / "assets" / "title_math_background.png"
+DESTINATION = ROOT / "assets" / "title_math_background_10.png"
 
 # Deck palette: BACKCOL is the slide background.
 BACK = np.array([18, 19, 23], dtype=np.float64)
 
 PORTRAIT_HEIGHT = 0.94  # fraction of the frame the photo spans
-FLOOR = 0.02  # ink density in the darkest regions, so the void keeps texture
-COUNT = 13_000  # sprite placements; the run stops early once converged
+FLOOR = 0.002  # ink density in the darkest regions, so the void keeps texture
+COUNT = 20_000  # sprite placements; the run stops early once converged
 SAMPLE_STEP = 4  # block size of the sampling grid, in pixels
-INK_ALPHA = 1.0  # sprites are placed crisp, not as a fog
+INK_ALPHA = 0.95  # sprites are placed crisp, not as a fog
 FORCED_HEIGHT = 64  # structure equations, in pixels
 
 # Duotone by local brightness: deep blue shadows, warm taupe midtones, warm
@@ -50,82 +59,187 @@ STOPS = [
     (1.00, (250, 236, 210)),
 ]
 
-# (Typst math, weight). Single objects are common, whole equations are rare.
+# (Typst math, weight). The formulas of tools/formulas.txt come first, one
+# entry per line with weight 1.
 POOL = [
-    (r"integral", 4), (r"partial", 4), (r"and", 4), (r"star.op", 4),
-    (r"bold(nabla)", 4), (r"times", 2), (r"⊕", 1), (r"⊗", 1),
-    (r"Omega", 3), (r"omega", 5), (r"alpha", 2), (r"beta", 2), (r"Gamma", 3),
-    (r"delta", 3), (r"Lambda", 1), (r"eta", 3), (r"RR", 2),
-    (r"d omega", 4), (r"d alpha", 3), (r"d beta", 3), (r"d theta", 3),
-    (r"d x^i", 2), (r"d x^1", 2), (r"d x^n", 2), (r"d A", 2), (r"d F", 2),
-    (r"omega|_p", 2), (r"Omega^k", 3), (r"Omega^k (M)", 2),
-    (r"omega in Omega^k (M)", 2),
-    (r"T_p M", 2), (r"T^a", 2), (r"R^a_b", 2), (r"theta^a", 2),
-    (r"omega^a_b", 2), (r"omega^a_c and omega^c_b", 1),
-    (r"partial_i", 3), (r"partial_i f", 2), (r"v^i", 2), (r"x^i", 2),
-    (r"f_i", 2), (r"g^(\mu nu)", 2), (r"eta_(a b)", 2),
-    (r'"sgn"(sigma)', 2), (r"(-1)^k", 2), (r"(-1)^i", 1), (r"k!", 2),
-    (r'"vol"_g', 2), (r"chevron.l alpha, beta chevron.r", 2),
-    (r"integral_M", 2), (r"integral_(partial M)", 2),
-    (r"integral_M d omega", 2), (r"integral_(partial M) omega", 2),
-    (r"d^2 = 0", 2), (r"d F = 0", 2), (r"F = d A", 2),
-    (r"d star.op F = star.op J", 2),
-    (r"d : Omega^k -> Omega^(k+1)", 1),
-    (r"d beta = 0 ==> beta = d alpha", 1),
-    (r"alpha and star.op beta = chevron.l alpha, beta chevron.r", 1),
-    (r"star.op star.op = (-1)^(k (n - k) + q)", 1),
-    (r"T^a = d theta^a + omega^a_b and theta^b", 2),
-    (r"R^a_b = d omega^a_b + omega^a_c and omega^c_b", 2),
+    # -- tools/formulas.txt, one entry per line ------------------------------
+    (r"T(X,Y) = nabla_X Y - nabla_Y X - [X,Y]", 1),
+    (r"nabla_(partial_mu) partial_nu = Gamma^rho #h(0cm)_(mu nu) partial_rho", 1),
+    (r"nabla_X e_b = omega^a #h(0cm)_b (X) e_a", 1),
+    (r"R(X,Y) e_b = nabla_X nabla_Y e_b - nabla_Y nabla_X - nabla_([X,Y]) e_b", 1),
+    (r"d e^a", 3),
+    (r"d omega^a #h(0cm)_b", 2),
+    (r"e^a", 3),
+    (r"omega^a #h(0cm)_b", 3),
+    (r"b^a = integral.cont_C e^a", 1),
+    (r"T^a = T^a #h(0cm)_(mu nu) d x^mu and d x^nu", 1),
+    (r"R^a #h(0cm)_(b mu nu) d x^mu and d x^nu", 1),
+    (r"g = eta_(a b) e^a times.o e^b", 1),
+    (r"e^a = (delta^a_mu + partial_mu u^a) d x^mu", 1),
+    (r"T_p M", 1),
+    (r"f(x) d x", 1),
+    (r"g(x,y) d x and d y", 1),
+    (r"Omega^k (M)", 1),
+    (r"d^2 = 0", 1),
     (r"integral_M d omega = integral_(partial M) omega", 1),
-    (r"g = eta_(a b) theta^a ⊗ theta^b", 1),
-    (r"d f (v) = v^i partial_i f", 1),
-    (r"1/(k! ell!)", 1), (r"sum_(sigma in S_(k + ell))", 1), (r"8 pi G", 1),
-    (r"omega_p : T_p M times dots.c times T_p M -> RR", 1),
+    (r"F_x d x + F_y d y + F_z d z", 1),
+    (r"F_x d y and d z + F_y d z and d x + F_z d x and d y", 1),
+    (r"integral.double_S (bold(nabla) times bold(F)) dot.c d bold(A) = integral.cont_(partial S) bold(F) dot.c d bold(r)", 1),
+    (r"integral.triple_V (bold(nabla) dot.c bold(F)) d V = integral.double_(partial V) bold(F) dot.c d bold(A)", 1),
+    (r"bold(nabla) times bold(F) = 0", 1),
+    (r"bold(F) = bold(nabla) f", 1),
+    (r"bold(nabla) dot.c bold(F)", 1),
+    (r"bold(F) = bold(nabla) times bold(A)", 1),
+
+    # -- torsion and the covariant derivative -------------------------------
+    (r"T^a", 5),
+    (r"nabla_X Y", 4),
+    (r"T(X,Y)", 3),
+    (r"nabla_Y X", 3),
+    (r"nabla_X", 3),
+    (r"nabla_Y", 3),
+    (r"[X,Y]", 3),
+
+    # -- connection, frames and curvature -----------------------------------
+    (r"nabla_X e_b", 4),
+    (r"R(X,Y)", 4),
+    (r"R^a #h(0cm)_(b mu nu)", 4),
+    (r"T^a #h(0cm)_(mu nu)", 4),
+    (r"nabla_(partial_mu) partial_nu", 3),
+    (r"Gamma^rho #h(0cm)_(mu nu)", 3),
+    (r"Gamma^rho", 3),
+    (r"omega^a #h(0cm)_b (X)", 3),
+    (r"e_a", 3),
+    (r"e_b", 3),
+    (r"R(X,Y) e_b", 3),
+    (r"nabla_X nabla_Y e_b", 3),
+    (r"nabla_([X,Y]) e_b", 2),
+
+    # -- forms, coframes and coordinates ------------------------------------
+    (r"d x", 4),
+    (r"d x^mu", 4),
+    (r"d x^mu and d x^nu", 4),
+    (r"d omega", 4),
+    (r"Omega^k", 4),
+    (r"partial_mu", 4),
+    (r"and", 4),
+    (r"d y", 3),
+    (r"d z", 3),
+    (r"d x^nu", 3),
+    (r"d x and d y", 3),
+    (r"d y and d z", 3),
+    (r"d z and d x", 3),
+    (r"d^2", 3),
+    (r"partial_nu", 3),
+    (r"partial_rho", 3),
+    (r"partial_mu u^a", 3),
+    (r"(delta^a_mu + partial_mu u^a) d x^mu", 2),
+    (r"delta^a_mu", 3),
+    (r"eta_(a b)", 3),
+    (r"e^a times.o e^b", 3),
+    (r"times.o", 3),
+    (r"f(x)", 3),
+    (r"b^a", 4),
+    (r"integral.cont_C e^a", 4),
+    (r"F_x d x", 3),
+    (r"F_y d y", 3),
+    (r"F_z d z", 3),
+
+    # -- integrals, gradient and Stokes -------------------------------------
+    (r"integral_M", 4),
+    (r"integral_(partial M)", 4),
+    (r"integral_M d omega", 4),
+    (r"integral_(partial M) omega", 4),
+    (r"partial M", 3),
+    (r"bold(nabla) times bold(F)", 3),
+    (r"bold(nabla) f", 3),
+    (r"bold(nabla) times bold(A)", 3),
+    (r"bold(F) dot.c d bold(A)", 3),
+    (r"bold(F) dot.c d bold(r)", 3),
+    (r"d bold(A)", 3),
+    (r"d bold(r)", 3),
+    (r"d V", 3),
+    (r"integral.double_S", 3),
+    (r"integral.cont_(partial S)", 3),
+    (r"integral.triple_V", 3),
+    (r"integral.double_(partial V)", 3),
+    (r"partial S", 3),
+    (r"partial V", 3),
+    (r"times", 4),
+    (r"integral", 3),
 ]
 
 # Cartan's structure equations: formula and the anchor their x is pulled to.
 FORCED = [
-    (r"T^a = d theta^a + omega^a #h(0cm)_b and theta^b", (0.0, H / 2)),
-    (r"R^a #h(0cm)_b = d omega^a_b + omega^a #h(0cm)_c and omega^c_b", (3 * W / 4, H / 2)),
+    (r"T^a = d e^a + omega^a #h(0cm)_b and e^b", (0.76*W, H / 2)),
+    (r"R^a #h(0cm)_b = d omega^a #h(0cm)_b + omega^a #h(0cm)_c and omega^c #h(0cm)_b", (30,3/4*H)),
 ]
 
 PREAMBLE = "#set page(width: auto, height: auto, margin: 0pt, fill: none)"
+
+# Typeset sprites are cached on disk (formula + ppi + Typst version), so a run
+# with new layout parameters or a new seed only redoes the placement. The cache
+# lives outside the repository; delete it, or point XDG_CACHE_HOME elsewhere,
+# to force a fresh typeset.
+CACHE = Path(
+    os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache"
+) / "cartan-title-art"
 
 
 # --- typesetting -----------------------------------------------------------
 
 
-@functools.lru_cache(maxsize=160)
+def cache_path(source, ppi):
+    version = getattr(typst, "__version__", "unknown")
+    key = "\0".join((version, PREAMBLE, source, str(ppi)))
+    return CACHE / (hashlib.sha256(key.encode()).hexdigest()[:24] + ".png")
+
+
+@functools.lru_cache(maxsize=384)
 def sprite(source, ppi):
-    """Typeset one formula and return its ink as a float alpha mask."""
+    """Typeset one formula and return its ink as a uint8 alpha mask.
+
+    The cropped mask is cached on disk, so repeated runs are not slowed down
+    by Typst except on the very first run.
+    """
+    path = cache_path(source, ppi)
+    try:
+        with Image.open(path) as cached:
+            return np.array(cached.convert("L"), dtype=np.uint8)
+    except (OSError, ValueError):
+        pass  # missing or unreadable cache entry: typeset it again
+
     document = f"{PREAMBLE}\n$ {source} $"
     png = typst.compile(document.encode(), format="png", ppi=ppi)
     image = Image.open(io.BytesIO(png)).convert("RGBA")
     bbox = image.split()[3].getbbox()
     if bbox:
         image = image.crop(bbox)
-    return np.asarray(image.split()[3], dtype=np.float64) / 255.0
+    mask = np.asarray(image.split()[3], dtype=np.uint8)
+
+    CACHE.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f"{path.stem}.{os.getpid()}.tmp")
+    Image.fromarray(mask).save(temporary, format="PNG")
+    os.replace(temporary, path)  # atomic, so parallel runs cannot corrupt it
+    return mask
 
 
+@functools.lru_cache(maxsize=256)
 def ink_at(source, height_px):
     """Alpha mask for a formula, rendered sharp enough for `height_px`.
 
     Returns ``None`` when the formula would have to be upscaled, which would
-    blur it into a blob (e.g. the dots of ``dots.c``).
+    blur it into a blob (e.g. the dot of ``dot.c``).
     """
     base = sprite(source, 600)
     need = height_px * 1.4 / base.shape[0]
     ppi = 600 if need <= 1 else (1200 if need <= 2 else 2400)
-    mask = sprite(source, ppi) if ppi != 600 else base
+    mask = sprite(source, ppi)
     if mask.shape[0] < height_px:
         return None
     width = max(1, round(mask.shape[1] * height_px / mask.shape[0]))
-    return np.asarray(
-        Image.fromarray((mask * 255).astype(np.uint8)).resize(
-            (width, height_px), Image.LANCZOS
-        ),
-        dtype=np.float64,
-    ) / 255.0
+    scaled = Image.fromarray(mask).resize((width, height_px), Image.LANCZOS)
+    return np.asarray(scaled, dtype=np.float64) / 255.0
 
 
 # --- density and colour maps ----------------------------------------------
@@ -151,9 +265,16 @@ def blur(a, radius):
 
 
 def block_mean(a, step):
-    return a.reshape(a.shape[0] // step, step, a.shape[1] // step, step).mean(
-        axis=(1, 3)
-    )
+    """Mean over `step` x `step` blocks, summing the contiguous axes first."""
+    rows = a.reshape(a.shape[0] // step, step, a.shape[1]).sum(axis=1)
+    return rows.reshape(
+        a.shape[0] // step, a.shape[1] // step, step
+    ).sum(axis=2) / (step * step)
+
+
+def integral_image(a):
+    """Summed-area table, so region means cost only four lookups."""
+    return np.pad(a, ((1, 0), (1, 0))).cumsum(axis=0).cumsum(axis=1)
 
 
 def target_density():
@@ -175,10 +296,10 @@ def target_density():
 # --- placement -------------------------------------------------------------
 
 
-def sample_position(rng, grid):
+def sample_position(rng, grid, cdf):
     """Draw a canvas position, weighted by the current deficit map."""
-    cell = rng.choice(grid.size, p=grid.ravel())
-    row, column = np.divmod(cell, grid.shape[1])
+    index = min(np.searchsorted(cdf, rng.random(), side="right"), grid.size - 1)
+    row, column = np.divmod(index, grid.shape[1])
     return (
         int(column * SAMPLE_STEP + rng.integers(0, SAMPLE_STEP)),
         int(row * SAMPLE_STEP + rng.integers(0, SAMPLE_STEP)),
@@ -210,33 +331,46 @@ def main():
     gy, gx = np.gradient(target)
     edges = blur(np.hypot(gx, gy) / (np.hypot(gx, gy).max() + 1e-9), 6)
     detail = np.abs(target - blur(target, 5))
+    detail_scale = 1.4 * detail
+    # The edge boost is constant, so its block grid is built once.
+    edge_grid = 1.0 + 4.0 * block_mean(edges, SAMPLE_STEP)
+    # Region means of the target are read off a summed-area table.
+    target_sum = integral_image(target)
 
     weighted = [source for source, weight in POOL for _ in range(weight)]
-    aspect = {}
+    metrics = {}
     for source, _ in POOL:
         mask = sprite(source, 600)
-        aspect[source] = mask.shape[1] / mask.shape[0]
-    compact = [source for source, _ in POOL if aspect[source] <= 7]
+        metrics[source] = mask.shape[1] / mask.shape[0], mask.shape[0]
+    # Only sprites that stay sharp when enlarged can serve as large anchors:
+    # the biggest anchor is 88 px and `ink_at` tops out at 2400 ppi, i.e. four
+    # times the 600 ppi height, so anything shorter than 22 px is out.
+    compact = [
+        source
+        for source, _ in POOL
+        if metrics[source][0] <= 7 and metrics[source][1] >= 22
+    ]
 
     coverage = np.zeros((H, W), dtype=np.float64)
     canvas = np.empty((H, W, 3), dtype=np.float64)
     canvas[:] = BACK
 
     grid = None
-    for i in range(COUNT):
+    cdf = None
+    for i in tqdm.tqdm(range(COUNT)):
         if i % 16 == 0:
             error = np.maximum(target - coverage, 0.0)
             if error.mean() < 0.004:
                 print(f"converged after {i} sprites")
                 break
-            error = np.maximum(error, 1.4 * detail * (error > 0.02))
+            error = np.maximum(error, detail_scale * (error > 0.02))
             pull = block_mean(error, SAMPLE_STEP) ** 1.5
-            boost = 1.0 + 4.0 * block_mean(edges, SAMPLE_STEP)
-            grid = pull * boost
+            grid = pull * edge_grid
             total = grid.sum()
             if total <= 0.0:
                 break
             grid /= total
+            cdf = np.cumsum(grid.ravel())
 
         share = i / COUNT
         u = rng.random()
@@ -249,18 +383,26 @@ def main():
         source = pool[rng.integers(len(pool))]
         height_px = int(round(float(np.exp(lo + u * (hi - lo)))))
 
+        ink = ink_at(source, height_px)
+        if ink is None:
+            continue  # sprite too small to be typeset sharp at this size
+        density = max(ink.mean(), 1e-3)
+        width = ink.shape[1]
+
         # Try a few candidates, keep the one that fits the local deficit best.
         best = None
         for _ in range(6):
-            x, y = sample_position(rng, grid)
-            ink = ink_at(source, height_px)
-            if ink is None:
-                continue
-            x = min(max(x, 0), W - ink.shape[1])
+            x, y = sample_position(rng, grid, cdf)
+            x = min(max(x, 0), W - width)
             y = min(max(y, 0), H - height_px)
-            want = target[y:y + height_px, x:x + ink.shape[1]].mean()
-            have = coverage[y:y + height_px, x:x + ink.shape[1]].mean()
-            margin = (want - have) / max(ink.mean(), 1e-3)
+            want = (
+                target_sum[y + height_px, x + width]
+                - target_sum[y, x + width]
+                - target_sum[y + height_px, x]
+                + target_sum[y, x]
+            ) / (height_px * width)
+            have = coverage[y:y + height_px, x:x + width].mean()
+            margin = (want - have) / density
             if best is None or margin > best[0]:
                 best = (margin, ink, x, y)
         margin, ink, x, y = best
@@ -282,13 +424,11 @@ def main():
     # covers them and they stay legible on top of the field.
     for source, (anchor_x, anchor_y) in FORCED:
         best = None
+        ink = ink_at(source, FORCED_HEIGHT)
         for _ in range(10):
-            x, y = sample_position(rng, grid)
-            x = int(x * 0.3 + 0.7 * anchor_x)
-            y = int(y * 0.8 + 0.2 * anchor_y)
-            ink = ink_at(source, FORCED_HEIGHT)
-            if ink is None:
-                continue
+            x, y = sample_position(rng, grid, cdf)
+            x = int(x * 0.01 + 0.99 * anchor_x)
+            y = int(y * 0.01 + 0.99 * anchor_y)
             x = min(max(x, 0), W - ink.shape[1])
             y = min(max(y, 0), H - FORCED_HEIGHT)
             deficit = target[y:y + FORCED_HEIGHT, x:x + ink.shape[1]].mean() - (

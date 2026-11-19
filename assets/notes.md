@@ -242,6 +242,218 @@ completing the proof.
 
 **Visualization**: TBD
 
+# Cartan structure equations (coordinate derivation)
+
+Let $e_a$ be a local frame, $e^a$ its dual coframe, and define the connection $1$-forms by
+$$
+\nabla_Xe_b=\omega^a{}_b(X)e_a.
+$$
+
+The components are $e^a{}_\mu=e^a(\partial_\mu)$, $\omega_\mu{}^a{}_b=\omega^a{}_b(\partial_\mu)$.
+
+## Lie bracket
+For vector fields $X=X^\rho\partial_\rho$, $Y=Y^\rho\partial_\rho$.
+The Lie bracket has components
+$$
+[X,Y]^\rho = X^\sigma\partial_\sigma Y^\rho - Y^\sigma\partial_\sigma X^\rho.
+$$
+For $X=\partial_\mu$ and $Y=\partial_\nu$,
+$$
+X^\rho=\delta^\rho_\mu, \qquad Y^\rho=\delta^\rho_\nu.
+$$
+These components are constant, so
+$$
+[\partial_\mu,\partial_\nu]=0.
+$$
+
+## First structure equation
+The torsion is defined by
+$$
+T(X,Y)=\nabla_XY-\nabla_YX-[X,Y].
+$$
+Its frame components are the $2$-forms
+$$
+T^a(X,Y)=e^a(T(X,Y)).
+$$
+Since $\partial_\nu=e^b{}_\nu e_b$, we have
+$$
+\begin{aligned}
+\nabla_{\partial_\mu}\partial_\nu &= \nabla_{\partial_\mu}(e^b{}_\nu e_b)\\
+&= (\partial_\mu e^b{}_\nu)e_b + e^b{}_\nu\nabla_{\partial_\mu}e_b\\
+&= (\partial_\mu e^a{}_\nu)e_a + e^b{}_\nu\omega^a{}_{b\mu}e_a.
+\end{aligned}
+$$
+Therefore,
+$$
+e^a(\nabla_{\partial_\mu}\partial_\nu) = \partial_\mu e^a{}_\nu + \omega^a{}_{b\mu}e^b{}_\nu.
+$$
+Using $[\partial_\mu,\partial_\nu]=0$,
+$$
+\begin{aligned}
+T^a(\partial_\mu,\partial_\nu) &= e^a\left( \nabla_{\partial_\mu}\partial_\nu - \nabla_{\partial_\nu}\partial_\mu \right)\\
+&= \partial_\mu e^a{}_\nu-\partial_\nu e^a{}_\mu + \omega^a{}_{b\mu}e^b{}_\nu - \omega^a{}_{b\nu}e^b{}_\mu.
+\end{aligned}
+$$
+But
+$$
+de^a(\partial_\mu,\partial_\nu) = \partial_\mu e^a{}_\nu-\partial_\nu e^a{}_\mu
+$$
+and
+$$
+(\omega^a{}_b\wedge e^b)(\partial_\mu,\partial_\nu) = \omega^a{}_{b\mu}e^b{}_\nu - \omega^a{}_{b\nu}e^b{}_\mu.
+$$
+Hence
+$$
+T^a=de^a+\omega^a{}_b\wedge e^b.
+$$
+
+# Second structure equation
+The curvature is defined by
+$$
+R(X,Y)Z = \nabla_X\nabla_YZ - \nabla_Y\nabla_XZ - \nabla_{[X,Y]}Z.
+$$
+The curvature $2$-forms are defined by
+$$
+R(X,Y)e_b=R^a{}_b(X,Y)e_a.
+$$
+Now
+$$
+\nabla_{\partial_\nu}e_b = \omega^c{}_{b\nu}e_c.
+$$
+Therefore,
+$$
+\begin{aligned}
+\nabla_{\partial_\mu}\nabla_{\partial_\nu}e_b &= \nabla_{\partial_\mu} \left(\omega^c{}_{b\nu}e_c\right)\\
+&= (\partial_\mu\omega^c{}_{b\nu})e_c + \omega^c{}_{b\nu}\nabla_{\partial_\mu}e_c\\
+&= \left( \partial_\mu\omega^a{}_{b\nu} + \omega^a{}_{c\mu}\omega^c{}_{b\nu} \right)e_a.
+\end{aligned}
+$$
+Interchanging $\mu$ and $\nu$,
+$$
+\nabla_{\partial_\nu}\nabla_{\partial_\mu}e_b = \left( \partial_\nu\omega^a{}_{b\mu} + \omega^a{}_{c\nu}\omega^c{}_{b\mu} \right)e_a.
+$$
+Since $[\partial_\mu,\partial_\nu]=0$,
+$$
+\begin{aligned}
+R^a{}_b(\partial_\mu,\partial_\nu) &= \partial_\mu\omega^a{}_{b\nu} - \partial_\nu\omega^a{}_{b\mu}\\
+&+ \omega^a{}_{c\mu}\omega^c{}_{b\nu} - \omega^a{}_{c\nu}\omega^c{}_{b\mu}.
+\end{aligned}
+$$
+But
+$$
+d\omega^a{}_b(\partial_\mu,\partial_\nu) = \partial_\mu\omega^a{}_{b\nu} - \partial_\nu\omega^a{}_{b\mu}
+$$
+and
+$$
+(\omega^a{}_c\wedge\omega^c{}_b)(\partial_\mu,\partial_\nu) = \omega^a{}_{c\mu}\omega^c{}_{b\nu} - \omega^a{}_{c\nu}\omega^c{}_{b\mu}.
+$$
+Therefore,
+$$
+R^a{}_b = d\omega^a{}_b + \omega^a{}_c\wedge\omega^c{}_b.
+$$
+
+# Cartan structure equations (coordinate free / differential forms)
+Let $e_a$ be a local frame, $e^a$ its dual coframe, and define the connection $1$-forms by
+$$
+\nabla_Xe_b=\omega^a{}_b(X)e_a.
+$$
+
+## First structure equation
+The torsion is
+$$
+T(X,Y)=\nabla_XY-\nabla_YX-[X,Y].
+$$
+Define its coframe components by
+$$
+T^a(X,Y)=e^a(T(X,Y)).
+$$
+Write $Y=e^b(Y)e_b$. Then
+$$
+\begin{aligned}
+\nabla_XY &= \nabla_X \big(e^b(Y)e_b\big)\\
+&= \nabla_X \big( e^b(Y) \big) e_b + e^b(Y) \nabla_X e_b.
+\end{aligned}
+$$
+Therefore,
+$$
+e^a(\nabla_XY) = \nabla_X \big(e^a(Y)\big) + \omega^a{}_b(X)e^b(Y).
+$$
+Substituting into the torsion definition,
+$$
+\begin{aligned}
+T^a(X,Y) &= \nabla_X \big(e^a(Y)\big) -\nabla_Y \big(e^a(X)\big) - e^a([X,Y])\\
+&+ \omega^a{}_b(X)e^b(Y) - \omega^a{}_b(Y)e^b(X).
+\end{aligned}
+$$
+The first line is
+$$
+de^a(X,Y) = \nabla_X (e^a(Y))-\nabla_Y (e^a(X))-e^a([X,Y]),
+$$
+and the second is
+$$
+(\omega^a{}_b\wedge e^b)(X,Y) = \omega^a{}_b(X)e^b(Y) - \omega^a{}_b(Y)e^b(X).
+$$
+Hence, for all $X,Y$,
+$$
+T^a(X,Y) = \big(de^a+\omega^a{}_b\wedge e^b\big)(X,Y).
+$$
+Therefore,
+$$
+T^a=de^a+\omega^a{}_b\wedge e^b.
+$$
+
+## Second structure equation
+The curvature is
+$$
+R(X,Y)Z = \nabla_X\nabla_YZ - \nabla_Y\nabla_XZ - \nabla_{[X,Y]}Z.
+$$
+Define the curvature $2$-forms by
+$$
+R(X,Y)e_b=R^a{}_b(X,Y)e_a.
+$$
+Using $\nabla_Ye_b=\omega^c{}_b(Y)e_c$, we obtain
+$$
+\begin{aligned}
+\nabla_X \nabla_Y e_b &= \nabla_X \big( \omega^c{}_b(Y) e_c \big)\\
+&= \nabla_X \big(\omega^c{}_b(Y)\big) e_c + \omega^c{}_b(Y) \nabla_X e_c\\
+&= \left[ \nabla_X \big(\omega^a{}_b(Y)\big) + \omega^a{}_c(X) \omega^c{}_b(Y) \right]e_a.
+\end{aligned}
+$$
+Likewise,
+$$
+\nabla_Y \nabla_X e_b = \left[ \nabla_Y \big(\omega^a{}_b(X)\big) + \omega^a{}_c(Y) \omega^c{}_b(X) \right]e_a,
+$$
+and
+$$
+\nabla_{[X,Y]}e_b = \omega^a{}_b([X,Y])e_a.
+$$
+Thus
+$$
+\begin{aligned}
+R^a{}_b(X,Y) &= \nabla_X \big(\omega^a{}_b(Y)\big) - \nabla_Y \big(\omega^a{}_b(X)\big) - \omega^a{}_b([X,Y])\\
+&+ \omega^a{}_c(X)\omega^c{}_b(Y) - \omega^a{}_c(Y)\omega^c{}_b(X).
+\end{aligned}
+$$
+The first line is
+$$
+d\omega^a{}_b(X,Y),
+$$
+and the second is
+$$
+(\omega^a{}_c \wedge \omega^c{}_b)(X,Y).
+$$
+Therefore,
+$$
+R^a{}_b = d\omega^a{}_b + \omega^a{}_c\wedge\omega^c{}_b.
+$$
+
+In matrix notation, the two equations are simply
+$$
+\boxed{T=de+\omega\wedge e},
+\qquad
+\boxed{R=d\omega+\omega\wedge\omega}.
+$$
+
 # Applications
 - [de Rham cohomology]
 - Maxwell equations
