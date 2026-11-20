@@ -156,7 +156,7 @@ class FormsVis2Section(_SectionBase):
         
 
 
-class FormsVisPreview(FormsVis2Section, DeckScene):
+class FormsVis2Preview(FormsVis2Section, DeckScene):
     def construct(self) -> None:
         self.prepare_section(FormsVis2Section)
         self.play_formsvis2()

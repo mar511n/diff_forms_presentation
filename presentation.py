@@ -16,6 +16,12 @@ from section_exterior_derivative2 import ExteriorDerivative2Section
 from section_gen_stokes import GenStokesSection
 from section_gen_stokes2 import GenStokes2Section
 from section_poincare import PoincareSection
+from section_cartan import (
+    CartanFirstSection,
+    CartanMatrixSection,
+    CartanSecondSection,
+    CartanSetupSection,
+)
 
 
 class Presentation(
@@ -30,6 +36,10 @@ class Presentation(
     GenStokesSection,
     GenStokes2Section,
     PoincareSection,
+    CartanSetupSection,
+    CartanFirstSection,
+    CartanSecondSection,
+    CartanMatrixSection,
     DeckScene,
 ):
     def construct(self) -> None:
@@ -53,3 +63,11 @@ class Presentation(
         self.play_gen_stokes2()
         self.start_section(PoincareSection)
         self.play_poincare()
+        self.start_section(CartanSetupSection)
+        self.play_cartan_setup()
+        self.start_section(CartanFirstSection)
+        self.play_cartan_first()
+        self.start_section(CartanSecondSection)
+        self.play_cartan_second()
+        self.start_section(CartanMatrixSection)
+        self.play_cartan_matrix()
