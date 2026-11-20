@@ -299,7 +299,8 @@ class CartanSetupSection(_SectionBase):
             r" &= \nabla_{", "X", r"} \nabla_{", "Y", r"} ", "Z",
             r" - \nabla_{", "Y", r"} \nabla_{", "X", r"} ", "Z",
             r" - \nabla_{[", "X", ",", "Y", r"]} ", "Z", r" \\",
-            r"R(", "X", ",", "Y", r") e_b &= R^a{}_b(", "X", ",", "Y", r") e_a",
+            "R^a{}_b(", "X", ",", "Y", ") &= e^a(R(", "X", ",", "Y", ") e_b)",
+            #r"R(", "X", ",", "Y", r") e_b &= R^a{}_b(", "X", ",", "Y", r") e_a",
         ]
         curvature = typesettex(*curvature_parts)
         variable_colors["Z"] = m.TEAL
@@ -654,7 +655,7 @@ class CartanFirstSection(_SectionBase):
         self.nslide()
         step3 = m.MathTex(r"\nabla_X Y", "=", r"\nabla_X", "(", "e", "^b", "(Y)", ")", "e_b", "+", "e^b (Y)", r"\omega^a{}_b (X)", "e_a", font_size=MATH_FONT_SIZE, typst_preamble=typst_preamble(MATH_FONT_SIZE))
         step3.next_to(reference, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
-        self.play(m.ReplacementTransform(step2[-2:], step3[-2:]))
+        self.play(m.Transform(step2[-2:], step3[-2:]))
         self.nslide()
         step4 = m.MathTex(r"e^a ( \nabla_X Y )", "=", r"\nabla_X", "(", "e", "^a", "(Y)", ")", "+", "e^b (Y)", r"\omega^a{}_b (X)", font_size=MATH_FONT_SIZE, typst_preamble=typst_preamble(MATH_FONT_SIZE))
         step4.next_to(step3, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
@@ -703,159 +704,123 @@ class CartanSecondSection(_SectionBase):
     def play_cartan_second(self):
         self.nslide()
         reference = dim(
-            typesettex(r"R(X,Y) e_b = R^a{}_b(X,Y) e_a", font_size=NOTE_FONT_SIZE)
-        )
-        expansions = typesettex(
-            r"\nabla_X \nabla_Y e_b &= (\nabla_X(\omega^a{}_b(Y)) "
-            r"+ \omega^a{}_c(X)\omega^c{}_b(Y)) e_a \\",
-            r"\nabla_Y \nabla_X e_b &= (\nabla_Y(\omega^a{}_b(X)) "
-            r"+ \omega^a{}_c(Y)\omega^c{}_b(X)) e_a \\",
-            r"\nabla_{[X,Y]} e_b &= \omega^a{}_b([X,Y]) e_a",
-        )
-        split = typesettex(
-            r"R^a{}_b(X,Y) &=",
-            r"\nabla_X(\omega^a{}_b(Y)) - \nabla_Y(\omega^a{}_b(X)) "
-            r"- \omega^a{}_b([X,Y]) \\",
-            r"&+ \omega^a{}_c(X)\omega^c{}_b(Y) "
-            r"- \omega^a{}_c(Y)\omega^c{}_b(X) \\",
-            r"&= ",
-            r"d\omega^a{}_b(X,Y)",
-            r"+ ",
-            r"(\omega^a{}_c \wedge \omega^c{}_b)(X,Y)",
-        )
-        split[1].set_color(D_COLOR)
-        split[2].set_color(W_COLOR)
-        split[4].set_color(D_COLOR)
-        split[6].set_color(W_COLOR)
-        footnote = dim(
             typesettex(
-                r"d\omega(X,Y) = \nabla_X(\omega(Y)) - \nabla_Y(\omega(X)) "
-                r"- \omega([X,Y])",
+                r"R^a{}_b(X,Y) = e^a(\nabla_X \nabla_Y e_b - \nabla_Y \nabla_X e_b - \nabla_{[X,Y]} e_b)",
                 font_size=NOTE_FONT_SIZE,
-            )
+            ),
+            opacity=0.75,
         )
-        result = typesettex(
-            r"R^a{}_b = ",
-            r"d\omega^a{}_b",
-            r"+ ",
-            r"\omega^a{}_c \wedge \omega^c{}_b",
-            font_size=RESULT_FONT_SIZE,
-        )
-        result[1].set_color(D_COLOR)
-        result[3].set_color(W_COLOR)
-
         reference.next_to(
             self.slide_title, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT
         )
-        expansions.next_to(
-            reference, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT
+        self.play(m.Write(reference))
+        self.nslide()
+        step1 = typesettex(
+            r"\nabla_X \nabla_Y e_b",
+            "=",
+            r"\nabla_X",
+            "(",
+            r"\omega","^a","{}_b (Y)",
+            "e","_a",
+            ")",
         )
-        split.next_to(expansions, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT)
-        footnote.next_to(split, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
-        result.next_to(footnote, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT)
-        box = m.SurroundingRectangle(
-            result, color=FRONTCOL, stroke_width=1.5, buff=0.16
+        step1.next_to(reference, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
+        self.play(m.Write(step1))
+        self.nslide()
+        step2 = typesettex(
+            r"\nabla_X \nabla_Y e_b",
+            "=",
+            r"\nabla_X",
+            "(",
+            r"\omega^a{}_b (Y)",
+            ")",
+            "e_a",
+            "+",
+            r"\omega","^c","{}_b (Y)",
+            r"\nabla_X",
+            "e", "_c",
         )
-
-        self.camera.add_fixed_in_frame_mobjects(
-            reference, expansions, split, footnote, result, box
+        step2.next_to(reference, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
+        self.play(m.TransformMatchingTex(step1, step2))
+        self.nslide()
+        step3 = typesettex(
+            r"\nabla_X \nabla_Y e_b",
+            "=",
+            r"\nabla_X",
+            "(",
+            r"\omega^a{}_b (Y)",
+            ")",
+            "e_a",
+            "+",
+            r"\omega^c{}_b (Y)",
+            r"\omega^a{}_c (X)",
+            "e_a",
         )
-        self.play(m.FadeIn(reference), m.Write(expansions[0]))
+        step3.next_to(reference, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
+        self.play(m.Transform(step2[-3:], step3[-2:]))
         self.nslide()
-        self.play(m.Write(expansions[1]), m.Write(expansions[2]))
-        self.nslide()
-        self.play(m.Write(split[0:2]), m.Write(split[2]))
-        self.nslide()
-        self.play(m.Write(split[3:]), m.FadeIn(footnote))
-        self.nslide()
-        self.play(
-            m.LaggedStart(
-                m.Circumscribe(split[4], color=D_COLOR),
-                m.Circumscribe(split[6], color=W_COLOR),
-                lag_ratio=0.4,
-            )
+        step4 = typesettex(
+            r"e^a(\nabla_X \nabla_Y e_b)",
+            "=",
+            r"\nabla_X",
+            "(",
+            r"\omega^a{}_b (Y)",
+            ")",
+            "+",
+            r"\omega^c{}_b (Y)",
+            r"\omega^a{}_c (X)",
         )
+        step4.next_to(step3, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
+        step4[2:6].set_color(D_COLOR)
+        step4[7:10].set_color(W_COLOR)
+        self.play(m.TransformMatchingTex(step3, step4, transform_mismatches=True))
         self.nslide()
-        self.play(m.Write(result))
-        self.play(m.Create(box))
-
-
-class CartanMatrixSection(_SectionBase):
-    PAGE = 14
-    TITLE = r"Cartan's equations in matrix form"
-
-    def play_cartan_matrix(self):
+        split = typesettex(
+            r"R^a{}_b(X,Y) &=",
+            r"\nabla_X(\omega^a{}_b(Y)) - \nabla_Y(\omega^a{}_b(X))",
+            r"- \omega^a{}_b([X,Y]) \\",
+            r"&+ \omega^a{}_c(X)\omega^c{}_b(Y) "
+            r"- \omega^a{}_c(Y)\omega^c{}_b(X)",
+        )
+        split.next_to(step4, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT)
+        split[1].set_color(D_COLOR)
+        split[3].set_color(W_COLOR)
+        self.play(m.Write(split[:3]))
         self.nslide()
-        recap = dim(
+        self.play(m.Write(split[3]))
+        self.nslide()
+        footnotes = dim(
             typesettex(
-                r"T^a = d e^a + \omega^a{}_b \wedge e^b \qquad\qquad "
-                r"R^a{}_b = d\omega^a{}_b + \omega^a{}_c \wedge \omega^c{}_b",
-                font_size=RECAP_FONT_SIZE,
-            )
-        )
-        heading = typeset_text(r"In matrix notation:")
-        torsion = typesettex(
-            r"T = ",
-            r"d e",
-            r"+ ",
-            r"\omega \wedge e",
-            font_size=MATRIX_FONT_SIZE,
-        )
-        torsion[1].set_color(D_COLOR)
-        torsion[3].set_color(W_COLOR)
-        curvature = typesettex(
-            r"R = ",
-            r"d\omega",
-            r"+ ",
-            r"\omega \wedge \omega",
-            font_size=MATRIX_FONT_SIZE,
-        )
-        curvature[1].set_color(D_COLOR)
-        curvature[3].set_color(W_COLOR)
-        note = dim(
-            typeset_text(
-                r"$\omega = (\omega^a{}_b)$, $e = (e^a)$; "
-                r"the wedge includes the matrix product",
+                r"d \alpha (X,Y) &= \nabla_X (\alpha (Y)) - \nabla_Y (\alpha (X)) "
+                r"- \alpha ([X,Y]) \\ ",
+                r"(\alpha \wedge \beta)(X,Y) &= \alpha (X) \beta (Y) "
+                r"- \alpha (Y) \beta (X)",
                 font_size=NOTE_FONT_SIZE,
-            )
+            ),
+            opacity=0.75,
         )
-        outlook = dim(
-            typeset_text(
-                r"Next: torsion and curvature as defects", font_size=NOTE_FONT_SIZE
-            )
-        )
-
-        recap.next_to(
-            self.slide_title, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT
-        )
-        heading.next_to(recap, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT)
-        torsion.next_to(heading, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT)
-        curvature.next_to(torsion, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT)
-        note.next_to(curvature, m.DOWN, buff=m.LARGE_BUFF, aligned_edge=m.LEFT)
-        outlook.next_to(note, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT)
-        torsion_box = m.SurroundingRectangle(
-            torsion, color=FRONTCOL, stroke_width=1.5, buff=0.18
-        )
-        curvature_box = m.SurroundingRectangle(
-            curvature, color=FRONTCOL, stroke_width=1.5, buff=0.18
-        )
-
-        self.camera.add_fixed_in_frame_mobjects(
-            recap,
-            heading,
-            torsion,
-            curvature,
-            note,
-            outlook,
-            torsion_box,
-            curvature_box,
-        )
-        self.play(m.FadeIn(recap), m.Write(heading))
+        footnotes.next_to(split, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
+        self.play(m.Write(footnotes[0]))
         self.nslide()
-        self.play(m.Write(torsion), m.Write(curvature))
-        self.play(m.Create(torsion_box), m.Create(curvature_box))
+        self.play(m.Write(footnotes[1]))
         self.nslide()
-        self.play(m.FadeIn(note), m.FadeIn(outlook))
+        result = typesettex(
+            r"R^a{}_b",
+            "=",
+            r"d\omega^a{}_b",
+            "+",
+            r"\omega^a{}_c \wedge \omega^c{}_b",
+            font_size=RESULT_FONT_SIZE,
+        )
+        result[2].set_color(D_COLOR)
+        result[4].set_color(W_COLOR)
+        box = m.SurroundingRectangle(result, color=FRONTCOL, buff=m.MED_SMALL_BUFF)
+        result = m.VGroup(result, box)
+        result.next_to(
+            footnotes, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT
+        ).set_x(0)
+        self.play(m.Write(result))
+        self.nslide()
 
 
 class CartanSetupPreview(CartanSetupSection, DeckScene):
@@ -874,9 +839,3 @@ class CartanSecondPreview(CartanSecondSection, DeckScene):
     def construct(self) -> None:
         self.prepare_section(CartanSecondSection)
         self.play_cartan_second()
-
-
-class CartanMatrixPreview(CartanMatrixSection, DeckScene):
-    def construct(self) -> None:
-        self.prepare_section(CartanMatrixSection)
-        self.play_cartan_matrix()
