@@ -76,6 +76,50 @@ PATH_ANGLE = 40 * m.DEGREES  # how far the frame travels to p2
 PATH_HEADING = 270 * m.DEGREES  # the path's direction at p, from theta to phi
 LABEL_FONT_SIZE = 0.75 * CONTENT_FONT_SIZE
 
+#   The two flat pictures that follow the globe: the torsion and the curvature of
+#   the connection, drawn on one pair of axes.
+PICTURE_ORIGIN = np.array([2.5, -2.0, 0.0])
+PICTURE_Y = np.array([2.0, 0.45, 0.0])
+PICTURE_X = np.array([1.25, 1.75, 0.0])
+PICTURE_Z = np.array([-0.2, 1.3, 0.0])
+TORSION_DIFF = np.array([-1.0,0.8,0])/2
+CURVATURE_DIFF = -np.array([-1.4,0.1,0])/2
+
+
+def turned(vector, angle):
+    """A vector of the plane, turned by an angle."""
+    c, s = np.cos(angle), np.sin(angle)
+    return np.array([c * vector[0] - s * vector[1], s * vector[0] + c * vector[1], 0.0])
+
+
+def left_of(vector, distance):
+    """A displacement of `distance`, to the left of a direction."""
+    normal = np.array([-vector[1], vector[0], 0.0])
+    return normal / np.linalg.norm(normal) * distance
+
+
+def picture_arrow(start, end, color, ratio=12, tip_ratio=0.22):
+    """An arrow of the flat pictures: a vector, or the gap between two vectors."""
+    return m.Arrow(
+        start,
+        end,
+        buff=0,
+        color=color,
+        stroke_width=6,
+        max_stroke_width_to_length_ratio=ratio,
+        max_tip_length_to_length_ratio=tip_ratio,
+    )
+
+
+def picture_label(code, point, color=FRONTCOL):
+    """A label of the flat pictures, centred on a point."""
+    return m.Typst(
+        code,
+        font_size=LABEL_FONT_SIZE,
+        fill_color=color,
+        typst_preamble=typst_preamble(LABEL_FONT_SIZE),
+    ).move_to(point)
+
 
 def camera_rows(camera):
     """The camera's screen axes in world coordinates: right, up, toward the viewer."""
@@ -278,7 +322,6 @@ class CartanSetupSection(_SectionBase):
         )
         rows = camera_rows(self.camera)
         center = SPHERE_SCREEN[0] * rows[0] + SPHERE_SCREEN[1] * rows[1]
-        toward = rows[2]
         sphere = m.Sphere(
             center=center,
             radius=SPHERE_RADIUS,
@@ -369,7 +412,9 @@ class CartanSetupSection(_SectionBase):
         )
 
         plane = tangent_square(point, normal, directions[0], directions[1])
-        plane2 = tangent_square(second_point, second_normal, actual_directions[0], actual_directions[1])
+        plane2 = tangent_square(
+            second_point, second_normal, actual_directions[0], actual_directions[1]
+        )
         second_dot = m.Dot3D(
             second_point + 0.015 * second_normal, radius=0.055, color=m.WHITE
         )
@@ -401,7 +446,9 @@ class CartanSetupSection(_SectionBase):
         )
         p2_label = self.globe_label(r"$p_2$", second_point, (0.02, 0.3))
         x_label = self.globe_label(r"$X$", point + 0.2 * heading, (0.0, 0.26), m.RED)
-        gamma_label = self.globe_label(r"$gamma$", path_points[len(path_points)//2], (0.0, -0.24), m.RED)
+        gamma_label = self.globe_label(
+            r"$gamma$", path_points[len(path_points) // 2], (0.0, -0.24), m.RED
+        )
 
         #   Transport is the rotation about the sphere's centre that carries p to p2:
         #   the arrows turn rigidly along the arc.
@@ -423,14 +470,19 @@ class CartanSetupSection(_SectionBase):
         self.play(m.Write(frame))
         self.nslide()
         self.play(m.Create(sphere))
-        self.play(m.Create(dot), m.Write(p_label), m.Create(coordinate_frame), m.Write(mu_label))
+        self.play(
+            m.Create(dot),
+            m.Write(p_label),
+            m.Create(coordinate_frame),
+            m.Write(mu_label),
+        )
         self.nslide()
-        self.play(m.Create(general_frame),m.Write(ea_label))
+        self.play(m.Create(general_frame), m.Write(ea_label))
         self.nslide()
         self.play(m.Write(connection))
         self.nslide()
         self.play(m.Uncreate(coordinate_frame), m.Unwrite(mu_label))
-        self.play(m.Create(plane),m.Create(x_arrow), m.Write(x_label))
+        self.play(m.Create(plane), m.Create(x_arrow), m.Write(x_label))
         self.nslide()
         self.play(m.Create(curve), m.Write(gamma_label))
         self.play(m.Create(plane2), m.Create(second_dot), m.Write(p2_label))
@@ -440,19 +492,98 @@ class CartanSetupSection(_SectionBase):
                 m.Transform(arrow, target, path_func=spin)
                 for arrow, target in zip(general_frame, landed_targets)
             ],
-            *[
-                arrow.animate.set_color(m.TEAL_E)
-                for arrow in general_frame
-            ],
+            *[arrow.animate.set_color(m.TEAL_E) for arrow in general_frame],
             m.Unwrite(ea_label),
         )
         self.play(m.Create(actual_frame))
         self.nslide()
         self.play(m.Create(differences))
         self.nslide()
-        self.play(m.Write(torsion))
+        #   The globe has done its work: it goes, and a flat axes cross takes its
+        #   place for the torsion and the curvature.
+        self.play(
+            m.Uncreate(sphere),
+            m.Uncreate(dot),
+            m.Uncreate(general_frame),
+            m.Uncreate(actual_frame),
+            m.Uncreate(differences),
+            m.Uncreate(plane),
+            m.Uncreate(plane2),
+            m.Uncreate(second_dot),
+            m.Uncreate(curve),
+            m.Uncreate(x_arrow),
+            m.Unwrite(p_label),
+            m.Unwrite(p2_label),
+            m.Unwrite(x_label),
+            m.Unwrite(gamma_label),
+        )
+        #   Nothing is three-dimensional any more: look straight at the picture.
+        self.set_camera_orientation(
+            phi=0, theta=-90 * m.DEGREES, zoom=1, frame_center=m.ORIGIN
+        )
+        origin = PICTURE_ORIGIN
+        vector_x, vector_y, vector_z = PICTURE_X, PICTURE_Y, PICTURE_Z
+        x_name = picture_label(r"$X$", origin + vector_x + np.array([-0.34, 0.26, 0.0]))
+        y_name = picture_label(r"$Y$", origin + vector_y + np.array([0.18, -0.26, 0.0]))
+        x_shaft = picture_arrow(origin, origin + vector_x, FRONTCOL)
+        y_shaft = picture_arrow(origin, origin + vector_y, FRONTCOL)
+        self.play(m.LaggedStart(m.Write(torsion), m.Create(x_shaft), m.Write(x_name), m.Create(y_shaft), m.Write(y_name)))#,m.Create(axes))
         self.nslide()
-        self.play(m.Write(curvature))
+        #   The parallelogram: Y carried along X, and X carried along Y. The
+        #   connection turns each copy a little, so the two corners miss each other.
+        carried_y = y_shaft.copy().set_color(m.GREY_A)
+        carried_x = x_shaft.copy().set_color(m.GREY_A)
+        self.add(carried_y, carried_x)
+        self.play(
+            carried_y.animate.put_start_and_end_on(start=origin+vector_x, end=origin+vector_x+vector_y+TORSION_DIFF/2),
+            carried_x.animate.put_start_and_end_on(start=origin+vector_y, end=origin+vector_y+vector_x-TORSION_DIFF/2),
+        )
+        torsion_gap = picture_arrow(carried_x.get_end(), carried_y.get_end(), m.YELLOW, ratio=30, tip_ratio=0.3)
+        torsion_name = picture_label(
+            r"$T$", (carried_x.get_end() + carried_y.get_end()) / 2 + np.array([0.2, 0.2, 0.0]), color=m.YELLOW
+        )
+        self.play(m.Create(torsion_gap), m.Write(torsion_name))
+        self.nslide()
+        #   The curvature picture takes the axes over: the same X and Y, with a
+        #   third vector carried to their far corner along both ways round.
+        self.play(
+            m.Write(curvature),
+            m.Uncreate(carried_y),
+            m.Uncreate(carried_x),
+            m.Uncreate(torsion_gap),
+            m.Unwrite(torsion_name),
+        )
+        corner = origin + vector_x + vector_y
+        parallelogram = m.VGroup(
+            m.Line(origin + vector_x, corner, color=FRONTCOL, stroke_width=2.5),
+            m.Line(origin + vector_y, corner, color=FRONTCOL, stroke_width=2.5),
+        )
+        z_shaft = picture_arrow(origin, origin + vector_z, m.TEAL)
+        z_name = picture_label(
+            r"$Z$", origin + vector_z + np.array([0.26, 0.16, 0.0]), m.TEAL
+        )
+        self.play(m.Create(parallelogram), m.Create(z_shaft), m.Write(z_name))
+        self.nslide()
+        along_x = z_shaft.copy().set_color(m.TEAL_E)
+        along_y = z_shaft.copy().set_color(m.TEAL_E)
+        self.add(along_x, along_y)
+        self.play(
+            along_x.animate.put_start_and_end_on(start=origin+vector_x, end=origin+vector_x+vector_z-CURVATURE_DIFF/4),
+            along_y.animate.put_start_and_end_on(start=origin+vector_y, end=origin+vector_y+vector_z+CURVATURE_DIFF/4)
+        )
+        self.play(
+            along_x.animate.put_start_and_end_on(start=origin+vector_x+vector_y, end=origin+vector_x+vector_y+vector_z-CURVATURE_DIFF/2),
+            along_y.animate.put_start_and_end_on(start=origin+vector_y+vector_x, end=origin+vector_y+vector_x+vector_z+CURVATURE_DIFF/2)
+        )
+        first_end = along_x.get_end()
+        second_end = along_y.get_end()
+        curvature_gap = picture_arrow(
+            first_end, second_end, m.YELLOW, ratio=30, tip_ratio=0.3
+        )
+        curvature_name = picture_label(
+            r"$R$", (first_end + second_end) / 2 + np.array([0, 0.24, 0.0]), color=m.YELLOW
+        )
+        self.play(m.Create(curvature_gap), m.Write(curvature_name))
         self.nslide()
         self.play(m.Write(goal))
         self.nslide()
