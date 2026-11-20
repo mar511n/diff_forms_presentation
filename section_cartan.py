@@ -10,7 +10,6 @@ number: the setup (11), the first equation (12), the second equation (13) and th
 matrix form (14).
 """
 
-from os import fpathconf
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -21,7 +20,6 @@ from deck import (
     CONTENT_FONT_SIZE,
     FRONTCOL,
     DeckScene,
-    split_typst_lines,
     typst_preamble,
 )
 
@@ -41,26 +39,18 @@ D_COLOR = m.BLUE  # the exterior-derivative part
 W_COLOR = m.RED  # the connection part
 
 
-def typeset(code, font_size=MATH_FONT_SIZE):
-    """A formula in display math, at this section's sizes."""
-    return m.MathTypst(
-        code, font_size=font_size, typst_preamble=typst_preamble(font_size)
-    )
-
 def typesettex(*parts, font_size=MATH_FONT_SIZE):
+    """A formula in display math, at this section's sizes."""
     return m.MathTex(
         *parts, font_size=font_size, typst_preamble=typst_preamble(font_size)
     )
 
-def typeset_text(code, font_size=MATH_FONT_SIZE):
+
+def typeset_text(*parts, font_size=MATH_FONT_SIZE):
     """Typeset text with inline math, at this section's sizes."""
-    return m.Typst(code, font_size=font_size, typst_preamble=typst_preamble(font_size))
-
-
-def formula_block(code, count, font_size=MATH_FONT_SIZE):
-    """An aligned formula and its `count` visual lines, top to bottom."""
-    block = typeset(code, font_size)
-    return block, split_typst_lines(block, count)
+    return m.Tex(
+        *parts, font_size=font_size, typst_preamble=typst_preamble(font_size)
+    )
 
 
 def dim(mobject, opacity=0.6):
@@ -83,7 +73,7 @@ LABEL_FONT_SIZE = 0.75 * CONTENT_FONT_SIZE
 
 #   The two flat pictures that follow the globe: the torsion and the curvature of
 #   the connection, drawn on one pair of axes.
-PICTURE_ORIGIN = np.array([2.5, -2.0, 0.0])
+PICTURE_ORIGIN = np.array([2.8, -2.0, 0.0])
 PICTURE_Y = np.array([2.0, 0.45, 0.0])
 PICTURE_X = np.array([1.25, 1.75, 0.0])
 PICTURE_Z = np.array([-0.2, 1.3, 0.0])
@@ -118,7 +108,7 @@ def picture_arrow(start, end, color, ratio=12, tip_ratio=0.22):
 
 def picture_label(code, point, color=FRONTCOL):
     """A label of the flat pictures, centred on a point."""
-    return m.Typst(
+    return m.MathTex(
         code,
         font_size=LABEL_FONT_SIZE,
         fill_color=color,
@@ -276,7 +266,7 @@ class CartanSetupSection(_SectionBase):
 
     def globe_label(self, code, point, offset, color=FRONTCOL):
         """A label pinned where a world point is drawn, moved by a screen offset."""
-        label = m.Typst(
+        label = m.MathTex(
             code,
             font_size=LABEL_FONT_SIZE,
             fill_color=color,
@@ -288,35 +278,37 @@ class CartanSetupSection(_SectionBase):
     def play_cartan_setup(self):
         self.nslide()
         frame = typeset_text(
-            r"Local frame $e_a$ and dual coframe $e^a$: "
-            r"#h(0.3cm) $e^a (e_b) = delta^a_b$"
+            r"Local frame $e_a$ and dual coframe $e^a(e_b) = \delta^a{}_b$"
         )
         connection = typeset_text(
-            r"Connection 1-forms: #h(0.3cm) "
-            r"$nabla_X e_b = omega^a #h(0cm)_b (X) e_a$"
+            r"Connection $1$-forms:  "
+            r"$\nabla_X e_b = \omega^a{}_b(X) e_a$"
         )
-        torsion = typeset(
-            r"T ({{X : x}}, {{Y : y}}) &= nabla_{{X : x}} {{Y : y}} "
-            r"- nabla_{{Y : y}} {{X : x}} "
-            r"- bracket.l {{X : x}}, {{Y : y}} bracket.r \ "
-            r"T^a ({{X : x}}, {{Y : y}}) &= e^a (T ({{X : x}}, {{Y : y}}))"
-        )
-        torsion.select("x").set_color(m.RED)
-        torsion.select("y").set_color(m.BLUE)
-        curvature = typeset(
-            r"R ({{X : x}}, {{Y : y}}) {{Z : z}} "
-            r"&= nabla_{{X : x}} nabla_{{Y : y}} {{Z : z}} "
-            r"- nabla_{{Y : y}} nabla_{{X : x}} {{Z : z}} "
-            r"- nabla_(bracket.l {{X : x}}, {{Y : y}} bracket.r) {{Z : z}} \ "
-            r"R ({{X : x}}, {{Y : y}}) e_b "
-            r"&= R^a #h(0cm)_b ({{X : x}}, {{Y : y}}) e_a"
-        )
-        curvature.select("x").set_color(m.RED)
-        curvature.select("y").set_color(m.BLUE)
-        curvature.select("z").set_color(m.TEAL)
+        torsion_parts = [
+            r"T(", "X", ",", "Y", r") &= \nabla_{", "X", "}", "Y",
+            r" - \nabla_{", "Y", "}", "X", r" - [", "X", ",", "Y", r"] \\",
+            r"T^a(", "X", ",", "Y", r") &= e^a(T(", "X", ",", "Y", "))",
+        ]
+        torsion = typesettex(*torsion_parts)
+        variable_colors = {"X": m.RED, "Y": m.BLUE}
+        for index, part in enumerate(torsion_parts):
+            if part in variable_colors:
+                torsion[index].set_color(variable_colors[part])
+        curvature_parts = [
+            r"R(", "X", ",", "Y", r") ", "Z",
+            r" &= \nabla_{", "X", r"} \nabla_{", "Y", r"} ", "Z",
+            r" - \nabla_{", "Y", r"} \nabla_{", "X", r"} ", "Z",
+            r" - \nabla_{[", "X", ",", "Y", r"]} ", "Z", r" \\",
+            r"R(", "X", ",", "Y", r") e_b &= R^a{}_b(", "X", ",", "Y", r") e_a",
+        ]
+        curvature = typesettex(*curvature_parts)
+        variable_colors["Z"] = m.TEAL
+        for index, part in enumerate(curvature_parts):
+            if part in variable_colors:
+                curvature[index].set_color(variable_colors[part])
         goal = typeset_text(
-            r"Goal: express torsion $T^a$ and curvature $R^a #h(0cm)_b$ "
-            r"through $d$ and $omega$."
+            r"Goal: express torsion $T^a$ and curvature $R^a{}_b$ "
+            r"through $d$ and $\omega$."
         )
 
         frame.next_to(
@@ -382,12 +374,14 @@ class CartanSetupSection(_SectionBase):
             ]
         )
 
-        p_label = self.globe_label(r"$p$", point, (-0.1, -0.24))
+        p_label = self.globe_label(r"p", point, (-0.1, -0.24))
         mu_label = self.globe_label(
-            r"$bold(partial)_mu$", point + FRAME_LENGTH * second, (0.22, -0.04)
+            r"\boldsymbol{\partial}_\mu",
+            point + FRAME_LENGTH * second,
+            (0.22, -0.04),
         )
         ea_label = self.globe_label(
-            r"$bold(e)_a$",
+            r"\mathbf{e}_a",
             point + FRAME_LENGTH * directions[1],
             (0.2, 0.07),
             m.TEAL,
@@ -459,10 +453,10 @@ class CartanSetupSection(_SectionBase):
                 for landed, actual in zip(landed_directions, actual_directions)
             ]
         )
-        p2_label = self.globe_label(r"$p_2$", second_point, (0.02, 0.3))
-        x_label = self.globe_label(r"$X$", point + 0.2 * heading, (0.0, 0.26), m.RED)
+        p2_label = self.globe_label(r"p_2", second_point, (0.02, 0.3))
+        x_label = self.globe_label(r"X", point + 0.2 * heading, (0.0, 0.26), m.RED)
         gamma_label = self.globe_label(
-            r"$gamma$", path_points[len(path_points) // 2], (0.0, -0.24), m.RED
+            r"\gamma", path_points[len(path_points) // 2], (0.0, -0.24), m.RED
         )
 
         #   Transport is the rotation about the sphere's centre that carries p to p2:
@@ -539,10 +533,10 @@ class CartanSetupSection(_SectionBase):
         origin = PICTURE_ORIGIN
         vector_x, vector_y, vector_z = PICTURE_X, PICTURE_Y, PICTURE_Z
         x_name = picture_label(
-            r"$X$", origin + vector_x + np.array([-0.34, 0.26, 0.0]), m.RED
+            r"X", origin + vector_x + np.array([-0.34, 0.26, 0.0]), m.RED
         )
         y_name = picture_label(
-            r"$Y$", origin + vector_y + np.array([0.18, -0.26, 0.0]), m.BLUE
+            r"Y", origin + vector_y + np.array([0.18, -0.26, 0.0]), m.BLUE
         )
         x_shaft = picture_arrow(origin, origin + vector_x, m.RED)
         y_shaft = picture_arrow(origin, origin + vector_y, m.BLUE)
@@ -575,7 +569,7 @@ class CartanSetupSection(_SectionBase):
             carried_x.get_end(), carried_y.get_end(), m.YELLOW, ratio=30, tip_ratio=0.3
         )
         torsion_name = picture_label(
-            r"$T$",
+            r"T",
             (carried_x.get_end() + carried_y.get_end()) / 2 + np.array([0.2, 0.2, 0.0]),
             color=m.YELLOW,
         )
@@ -597,7 +591,7 @@ class CartanSetupSection(_SectionBase):
         )
         z_shaft = picture_arrow(origin, origin + vector_z, m.TEAL)
         z_name = picture_label(
-            r"$Z$", origin + vector_z + np.array([0.26, 0.16, 0.0]), m.TEAL
+            r"Z", origin + vector_z + np.array([0.26, 0.16, 0.0]), m.TEAL
         )
         self.play(m.Create(parallelogram), m.Create(z_shaft), m.Write(z_name))
         self.nslide()
@@ -630,7 +624,7 @@ class CartanSetupSection(_SectionBase):
             first_end, second_end, m.YELLOW, ratio=30, tip_ratio=0.3
         )
         curvature_name = picture_label(
-            r"$R$",
+            r"R",
             (first_end + second_end) / 2 + np.array([0, 0.24, 0.0]),
             color=m.YELLOW,
         )
@@ -708,43 +702,47 @@ class CartanSecondSection(_SectionBase):
 
     def play_cartan_second(self):
         self.nslide()
-        reference = dim(typeset(r"R (X,Y) e_b = R^a_b (X,Y) e_a", NOTE_FONT_SIZE))
-        expansions, expansion_lines = formula_block(
-            r"nabla_X nabla_Y e_b &= (nabla_X (omega^a_b (Y)) "
-            r"+ omega^a_c (X) omega^c_b (Y)) e_a \ "
-            r"nabla_Y nabla_X e_b &= (nabla_Y (omega^a_b (X)) "
-            r"+ omega^a_c (Y) omega^c_b (X)) e_a \ "
-            r"nabla_([X,Y]) e_b &= omega^a_b ([X,Y]) e_a",
-            3,
+        reference = dim(
+            typesettex(r"R(X,Y) e_b = R^a{}_b(X,Y) e_a", font_size=NOTE_FONT_SIZE)
         )
-        split, split_lines = formula_block(
-            r"R^a_b (X,Y) &= {{nabla_X (omega^a_b (Y)) "
-            r"- nabla_Y (omega^a_b (X)) "
-            r"- omega^a_b ([X,Y]) : dpart}} \ "
-            r"&+ {{omega^a_c (X) omega^c_b (Y) "
-            r"- omega^a_c (Y) omega^c_b (X) : wpart}} \ "
-            r"&= {{d omega^a_b (X,Y) : dfin}} "
-            r"+ {{(omega^a_c and omega^c_b)(X,Y) : wfin}}",
-            3,
+        expansions = typesettex(
+            r"\nabla_X \nabla_Y e_b &= (\nabla_X(\omega^a{}_b(Y)) "
+            r"+ \omega^a{}_c(X)\omega^c{}_b(Y)) e_a \\",
+            r"\nabla_Y \nabla_X e_b &= (\nabla_Y(\omega^a{}_b(X)) "
+            r"+ \omega^a{}_c(Y)\omega^c{}_b(X)) e_a \\",
+            r"\nabla_{[X,Y]} e_b &= \omega^a{}_b([X,Y]) e_a",
         )
-        split.select("dpart").set_color(D_COLOR)
-        split.select("wpart").set_color(W_COLOR)
-        split.select("dfin").set_color(D_COLOR)
-        split.select("wfin").set_color(W_COLOR)
+        split = typesettex(
+            r"R^a{}_b(X,Y) &=",
+            r"\nabla_X(\omega^a{}_b(Y)) - \nabla_Y(\omega^a{}_b(X)) "
+            r"- \omega^a{}_b([X,Y]) \\",
+            r"&+ \omega^a{}_c(X)\omega^c{}_b(Y) "
+            r"- \omega^a{}_c(Y)\omega^c{}_b(X) \\",
+            r"&= ",
+            r"d\omega^a{}_b(X,Y)",
+            r"+ ",
+            r"(\omega^a{}_c \wedge \omega^c{}_b)(X,Y)",
+        )
+        split[1].set_color(D_COLOR)
+        split[2].set_color(W_COLOR)
+        split[4].set_color(D_COLOR)
+        split[6].set_color(W_COLOR)
         footnote = dim(
-            typeset(
-                r"d omega (X,Y) = nabla_X (omega (Y)) - nabla_Y (omega (X)) "
-                r"- omega ([X,Y])",
-                NOTE_FONT_SIZE,
+            typesettex(
+                r"d\omega(X,Y) = \nabla_X(\omega(Y)) - \nabla_Y(\omega(X)) "
+                r"- \omega([X,Y])",
+                font_size=NOTE_FONT_SIZE,
             )
         )
-        result = typeset(
-            r"R^a_b = {{d omega^a_b : d}} "
-            r"+ {{omega^a_c and omega^c_b : w}}",
-            RESULT_FONT_SIZE,
+        result = typesettex(
+            r"R^a{}_b = ",
+            r"d\omega^a{}_b",
+            r"+ ",
+            r"\omega^a{}_c \wedge \omega^c{}_b",
+            font_size=RESULT_FONT_SIZE,
         )
-        result.select("d").set_color(D_COLOR)
-        result.select("w").set_color(W_COLOR)
+        result[1].set_color(D_COLOR)
+        result[3].set_color(W_COLOR)
 
         reference.next_to(
             self.slide_title, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT
@@ -762,18 +760,18 @@ class CartanSecondSection(_SectionBase):
         self.camera.add_fixed_in_frame_mobjects(
             reference, expansions, split, footnote, result, box
         )
-        self.play(m.FadeIn(reference), m.Write(expansion_lines[0]))
+        self.play(m.FadeIn(reference), m.Write(expansions[0]))
         self.nslide()
-        self.play(m.Write(expansion_lines[1]), m.Write(expansion_lines[2]))
+        self.play(m.Write(expansions[1]), m.Write(expansions[2]))
         self.nslide()
-        self.play(m.Write(split_lines[0]), m.Write(split_lines[1]))
+        self.play(m.Write(split[0:2]), m.Write(split[2]))
         self.nslide()
-        self.play(m.Write(split_lines[2]), m.FadeIn(footnote))
+        self.play(m.Write(split[3:]), m.FadeIn(footnote))
         self.nslide()
         self.play(
             m.LaggedStart(
-                m.Circumscribe(split.select("dfin"), color=D_COLOR),
-                m.Circumscribe(split.select("wfin"), color=W_COLOR),
+                m.Circumscribe(split[4], color=D_COLOR),
+                m.Circumscribe(split[6], color=W_COLOR),
                 lag_ratio=0.4,
             )
         )
@@ -789,31 +787,42 @@ class CartanMatrixSection(_SectionBase):
     def play_cartan_matrix(self):
         self.nslide()
         recap = dim(
-            typeset(
-                r"T^a = d e^a + omega^a_b and e^b quad quad "
-                r"R^a_b = d omega^a_b "
-                r"+ omega^a_c and omega^c_b",
-                RECAP_FONT_SIZE,
+            typesettex(
+                r"T^a = d e^a + \omega^a{}_b \wedge e^b \qquad\qquad "
+                r"R^a{}_b = d\omega^a{}_b + \omega^a{}_c \wedge \omega^c{}_b",
+                font_size=RECAP_FONT_SIZE,
             )
         )
         heading = typeset_text(r"In matrix notation:")
-        torsion = typeset(r"T = {{d e : d}} + {{omega and e : w}}", MATRIX_FONT_SIZE)
-        torsion.select("d").set_color(D_COLOR)
-        torsion.select("w").set_color(W_COLOR)
-        curvature = typeset(
-            r"R = {{d omega : d}} + {{omega and omega : w}}", MATRIX_FONT_SIZE
+        torsion = typesettex(
+            r"T = ",
+            r"d e",
+            r"+ ",
+            r"\omega \wedge e",
+            font_size=MATRIX_FONT_SIZE,
         )
-        curvature.select("d").set_color(D_COLOR)
-        curvature.select("w").set_color(W_COLOR)
+        torsion[1].set_color(D_COLOR)
+        torsion[3].set_color(W_COLOR)
+        curvature = typesettex(
+            r"R = ",
+            r"d\omega",
+            r"+ ",
+            r"\omega \wedge \omega",
+            font_size=MATRIX_FONT_SIZE,
+        )
+        curvature[1].set_color(D_COLOR)
+        curvature[3].set_color(W_COLOR)
         note = dim(
             typeset_text(
-                r"$omega = (omega^a_b)$, $e = (e^a)$; "
+                r"$\omega = (\omega^a{}_b)$, $e = (e^a)$; "
                 r"the wedge includes the matrix product",
-                NOTE_FONT_SIZE,
+                font_size=NOTE_FONT_SIZE,
             )
         )
         outlook = dim(
-            typeset_text(r"Next: torsion and curvature as defects", NOTE_FONT_SIZE)
+            typeset_text(
+                r"Next: torsion and curvature as defects", font_size=NOTE_FONT_SIZE
+            )
         )
 
         recap.next_to(
