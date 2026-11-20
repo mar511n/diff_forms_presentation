@@ -40,7 +40,8 @@ def split_typst_lines(mobj, count=2):
     The parts are grouped by vertical position: the widest `count - 1` gaps between
     neighbouring parts are the line boundaries. The groups hold the original parts, not
     copies, so a multi-line `&`-aligned equation keeps its alignment while the lines can
-    be written one at a time. `count` must be the object's number of lines.
+    be written one at a time. `count` must be the object's number of lines. Within each
+    group the parts are sorted left to right.
     """
     parts = sorted(mobj.submobjects, key=lambda part: part.get_center()[1])
     ys = [part.get_center()[1] for part in parts]
@@ -49,6 +50,8 @@ def split_typst_lines(mobj, count=2):
     groups = [m.VGroup() for _ in range(count)]
     for part, y in zip(parts, ys):
         groups[sum(y < boundary for boundary in boundaries)].add(part)
+    for group in groups:
+        group.sort()
     return groups
 
 

@@ -10,6 +10,7 @@ number: the setup (11), the first equation (12), the second equation (13) and th
 matrix form (14).
 """
 
+from os import fpathconf
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -37,7 +38,7 @@ RECAP_FONT_SIZE = 0.72 * CONTENT_FONT_SIZE
 RESULT_FONT_SIZE = CONTENT_FONT_SIZE
 MATRIX_FONT_SIZE = 1.2 * CONTENT_FONT_SIZE
 D_COLOR = m.BLUE  # the exterior-derivative part
-W_COLOR = m.YELLOW  # the connection part
+W_COLOR = m.RED  # the connection part
 
 
 def typeset(code, font_size=MATH_FONT_SIZE):
@@ -46,6 +47,10 @@ def typeset(code, font_size=MATH_FONT_SIZE):
         code, font_size=font_size, typst_preamble=typst_preamble(font_size)
     )
 
+def typesettex(*parts, font_size=MATH_FONT_SIZE):
+    return m.MathTex(
+        *parts, font_size=font_size, typst_preamble=typst_preamble(font_size)
+    )
 
 def typeset_text(code, font_size=MATH_FONT_SIZE):
     """Typeset text with inline math, at this section's sizes."""
@@ -82,8 +87,8 @@ PICTURE_ORIGIN = np.array([2.5, -2.0, 0.0])
 PICTURE_Y = np.array([2.0, 0.45, 0.0])
 PICTURE_X = np.array([1.25, 1.75, 0.0])
 PICTURE_Z = np.array([-0.2, 1.3, 0.0])
-TORSION_DIFF = np.array([-1.0,0.8,0])/2
-CURVATURE_DIFF = -np.array([-1.4,0.1,0])/2
+TORSION_DIFF = np.array([-1.0, 0.8, 0]) / 2
+CURVATURE_DIFF = -np.array([-1.4, 0.1, 0]) / 2
 
 
 def turned(vector, angle):
@@ -267,7 +272,7 @@ def tangent_square(point, normal, first, second, half=0.6, lift=0.0):
 
 class CartanSetupSection(_SectionBase):
     PAGE = 11
-    TITLE = r"Cartan structure equations"
+    TITLE = r"Geometry in the language of forms"
 
     def globe_label(self, code, point, offset, color=FRONTCOL):
         """A label pinned where a world point is drawn, moved by a screen offset."""
@@ -291,14 +296,24 @@ class CartanSetupSection(_SectionBase):
             r"$nabla_X e_b = omega^a #h(0cm)_b (X) e_a$"
         )
         torsion = typeset(
-            r"T (X,Y) &= nabla_X Y - nabla_Y X - [X,Y] \ "
-            r"T^a (X,Y) &= e^a (T (X,Y))"
+            r"T ({{X : x}}, {{Y : y}}) &= nabla_{{X : x}} {{Y : y}} "
+            r"- nabla_{{Y : y}} {{X : x}} "
+            r"- bracket.l {{X : x}}, {{Y : y}} bracket.r \ "
+            r"T^a ({{X : x}}, {{Y : y}}) &= e^a (T ({{X : x}}, {{Y : y}}))"
         )
+        torsion.select("x").set_color(m.RED)
+        torsion.select("y").set_color(m.BLUE)
         curvature = typeset(
-            r"R (X,Y) Z &= nabla_X nabla_Y Z - nabla_Y nabla_X Z "
-            r"- nabla_([X,Y]) Z \ "
-            r"R (X,Y) e_b &= R^a #h(0cm)_b (X,Y) e_a"
+            r"R ({{X : x}}, {{Y : y}}) {{Z : z}} "
+            r"&= nabla_{{X : x}} nabla_{{Y : y}} {{Z : z}} "
+            r"- nabla_{{Y : y}} nabla_{{X : x}} {{Z : z}} "
+            r"- nabla_(bracket.l {{X : x}}, {{Y : y}} bracket.r) {{Z : z}} \ "
+            r"R ({{X : x}}, {{Y : y}}) e_b "
+            r"&= R^a #h(0cm)_b ({{X : x}}, {{Y : y}}) e_a"
         )
+        curvature.select("x").set_color(m.RED)
+        curvature.select("y").set_color(m.BLUE)
+        curvature.select("z").set_color(m.TEAL)
         goal = typeset_text(
             r"Goal: express torsion $T^a$ and curvature $R^a #h(0cm)_b$ "
             r"through $d$ and $omega$."
@@ -523,24 +538,46 @@ class CartanSetupSection(_SectionBase):
         )
         origin = PICTURE_ORIGIN
         vector_x, vector_y, vector_z = PICTURE_X, PICTURE_Y, PICTURE_Z
-        x_name = picture_label(r"$X$", origin + vector_x + np.array([-0.34, 0.26, 0.0]))
-        y_name = picture_label(r"$Y$", origin + vector_y + np.array([0.18, -0.26, 0.0]))
-        x_shaft = picture_arrow(origin, origin + vector_x, FRONTCOL)
-        y_shaft = picture_arrow(origin, origin + vector_y, FRONTCOL)
-        self.play(m.LaggedStart(m.Write(torsion), m.Create(x_shaft), m.Write(x_name), m.Create(y_shaft), m.Write(y_name)))#,m.Create(axes))
+        x_name = picture_label(
+            r"$X$", origin + vector_x + np.array([-0.34, 0.26, 0.0]), m.RED
+        )
+        y_name = picture_label(
+            r"$Y$", origin + vector_y + np.array([0.18, -0.26, 0.0]), m.BLUE
+        )
+        x_shaft = picture_arrow(origin, origin + vector_x, m.RED)
+        y_shaft = picture_arrow(origin, origin + vector_y, m.BLUE)
+        self.play(
+            m.LaggedStart(
+                m.Write(torsion),
+                m.Create(x_shaft),
+                m.Write(x_name),
+                m.Create(y_shaft),
+                m.Write(y_name),
+            )
+        )  # ,m.Create(axes))
         self.nslide()
         #   The parallelogram: Y carried along X, and X carried along Y. The
         #   connection turns each copy a little, so the two corners miss each other.
-        carried_y = y_shaft.copy().set_color(m.GREY_A)
-        carried_x = x_shaft.copy().set_color(m.GREY_A)
+        carried_y = y_shaft.copy().set_color(m.BLUE_E)
+        carried_x = x_shaft.copy().set_color(m.RED_E)
         self.add(carried_y, carried_x)
         self.play(
-            carried_y.animate.put_start_and_end_on(start=origin+vector_x, end=origin+vector_x+vector_y+TORSION_DIFF/2),
-            carried_x.animate.put_start_and_end_on(start=origin+vector_y, end=origin+vector_y+vector_x-TORSION_DIFF/2),
+            carried_y.animate.put_start_and_end_on(
+                start=origin + vector_x,
+                end=origin + vector_x + vector_y + TORSION_DIFF / 2,
+            ),
+            carried_x.animate.put_start_and_end_on(
+                start=origin + vector_y,
+                end=origin + vector_y + vector_x - TORSION_DIFF / 2,
+            ),
         )
-        torsion_gap = picture_arrow(carried_x.get_end(), carried_y.get_end(), m.YELLOW, ratio=30, tip_ratio=0.3)
+        torsion_gap = picture_arrow(
+            carried_x.get_end(), carried_y.get_end(), m.YELLOW, ratio=30, tip_ratio=0.3
+        )
         torsion_name = picture_label(
-            r"$T$", (carried_x.get_end() + carried_y.get_end()) / 2 + np.array([0.2, 0.2, 0.0]), color=m.YELLOW
+            r"$T$",
+            (carried_x.get_end() + carried_y.get_end()) / 2 + np.array([0.2, 0.2, 0.0]),
+            color=m.YELLOW,
         )
         self.play(m.Create(torsion_gap), m.Write(torsion_name))
         self.nslide()
@@ -568,12 +605,24 @@ class CartanSetupSection(_SectionBase):
         along_y = z_shaft.copy().set_color(m.TEAL_E)
         self.add(along_x, along_y)
         self.play(
-            along_x.animate.put_start_and_end_on(start=origin+vector_x, end=origin+vector_x+vector_z-CURVATURE_DIFF/4),
-            along_y.animate.put_start_and_end_on(start=origin+vector_y, end=origin+vector_y+vector_z+CURVATURE_DIFF/4)
+            along_x.animate.put_start_and_end_on(
+                start=origin + vector_x,
+                end=origin + vector_x + vector_z - CURVATURE_DIFF / 4,
+            ),
+            along_y.animate.put_start_and_end_on(
+                start=origin + vector_y,
+                end=origin + vector_y + vector_z + CURVATURE_DIFF / 4,
+            ),
         )
         self.play(
-            along_x.animate.put_start_and_end_on(start=origin+vector_x+vector_y, end=origin+vector_x+vector_y+vector_z-CURVATURE_DIFF/2),
-            along_y.animate.put_start_and_end_on(start=origin+vector_y+vector_x, end=origin+vector_y+vector_x+vector_z+CURVATURE_DIFF/2)
+            along_x.animate.put_start_and_end_on(
+                start=origin + vector_x + vector_y,
+                end=origin + vector_x + vector_y + vector_z - CURVATURE_DIFF / 2,
+            ),
+            along_y.animate.put_start_and_end_on(
+                start=origin + vector_y + vector_x,
+                end=origin + vector_y + vector_x + vector_z + CURVATURE_DIFF / 2,
+            ),
         )
         first_end = along_x.get_end()
         second_end = along_y.get_end()
@@ -581,7 +630,9 @@ class CartanSetupSection(_SectionBase):
             first_end, second_end, m.YELLOW, ratio=30, tip_ratio=0.3
         )
         curvature_name = picture_label(
-            r"$R$", (first_end + second_end) / 2 + np.array([0, 0.24, 0.0]), color=m.YELLOW
+            r"$R$",
+            (first_end + second_end) / 2 + np.array([0, 0.24, 0.0]),
+            color=m.YELLOW,
         )
         self.play(m.Create(curvature_gap), m.Write(curvature_name))
         self.nslide()
@@ -595,75 +646,60 @@ class CartanFirstSection(_SectionBase):
 
     def play_cartan_first(self):
         self.nslide()
-        reference = dim(typeset(r"T^a (X,Y) = e^a (T (X,Y))", NOTE_FONT_SIZE))
-        steps, step_lines = formula_block(
-            r"nabla_X Y &= nabla_X (e^b (Y)) e_b + e^b (Y) nabla_X e_b \ "
-            r"e^a (nabla_X Y) &= nabla_X (e^a (Y)) "
-            r"+ {{omega^a_b (X) e^b (Y) : conn}}",
-            2,
-        )
-        steps.select("conn").set_color(W_COLOR)
-        split, split_lines = formula_block(
-            r"T^a (X,Y) &= {{nabla_X (e^a (Y)) - nabla_Y (e^a (X)) "
-            r"- e^a ([X,Y]) : dpart}} \ "
-            r"&+ {{omega^a_b (X) e^b (Y) "
-            r"- omega^a_b (Y) e^b (X) : wpart}} \ "
-            r"&= {{d e^a (X,Y) : dfin}} "
-            r"+ {{(omega^a_b and e^b)(X,Y) : wfin}}",
-            3,
-        )
-        split.select("dpart").set_color(D_COLOR)
-        split.select("wpart").set_color(W_COLOR)
-        split.select("dfin").set_color(D_COLOR)
-        split.select("wfin").set_color(W_COLOR)
+        reference = dim(typesettex(r"T^a (X,Y) = e^a (\nabla_X Y - \nabla_Y X - [X,Y])", font_size=NOTE_FONT_SIZE), opacity=0.75)
+        reference.next_to(self.slide_title, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT)
+        self.play(m.Write(reference))
+        self.nslide()
+        step1 = m.MathTex(r"\nabla_X Y", "=", r"\nabla_X", "(", "e^b (Y)", "e_b", ")", font_size=MATH_FONT_SIZE, typst_preamble=typst_preamble(MATH_FONT_SIZE))
+        step1.next_to(reference, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
+        self.play(m.Write(step1))
+        self.nslide()
+        step2 = m.MathTex(r"\nabla_X Y", "=", r"\nabla_X", "(", "e^b (Y)", ")", "e_b", "+", "e^b (Y)", r"\nabla_X", "e_b", font_size=MATH_FONT_SIZE, typst_preamble=typst_preamble(MATH_FONT_SIZE))
+        step2.next_to(reference, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
+        self.play(m.TransformMatchingTex(step1, step2))
+        self.nslide()
+        step3 = m.MathTex(r"\nabla_X Y", "=", r"\nabla_X", "(", "e", "^b", "(Y)", ")", "e_b", "+", "e^b (Y)", r"\omega^a{}_b (X)", "e_a", font_size=MATH_FONT_SIZE, typst_preamble=typst_preamble(MATH_FONT_SIZE))
+        step3.next_to(reference, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
+        self.play(m.ReplacementTransform(step2[-2:], step3[-2:]))
+        self.nslide()
+        step4 = m.MathTex(r"e^a ( \nabla_X Y )", "=", r"\nabla_X", "(", "e", "^a", "(Y)", ")", "+", "e^b (Y)", r"\omega^a{}_b (X)", font_size=MATH_FONT_SIZE, typst_preamble=typst_preamble(MATH_FONT_SIZE))
+        step4.next_to(step3, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
+        step4[2:8].set_color(D_COLOR)
+        step4[-2:].set_color(W_COLOR)
+        self.play(m.TransformMatchingTex(step3, step4, transform_mismatches=True))
+        self.nslide()
+        texsplit = m.MathTex(r"T^a (X,Y) &=", r"\nabla_X (e^a (Y)) - \nabla_Y (e^a (X))", r"- e^a ([X,Y]) \\", r"&+ \omega^a{}_b(X) e^b(Y) - \omega^a{}_b(Y) e^b(X)", font_size=MATH_FONT_SIZE, typst_preamble=typst_preamble(MATH_FONT_SIZE))
+        texsplit.next_to(step4, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT)
+        texsplit[1].set_color(D_COLOR)
+        texsplit[3].set_color(W_COLOR)
+        self.play(m.Write(texsplit[:3]))
+        self.nslide()
+        self.play(m.Write(texsplit[3]))
+        self.nslide()
         footnotes = dim(
-            typeset(
-                r"d omega (X,Y) &= nabla_X (omega (Y)) - nabla_Y (omega (X)) "
-                r"- omega ([X,Y]) \ "
-                r"(omega and e)(X,Y) &= omega (X) e (Y) - omega (Y) e (X)",
-                NOTE_FONT_SIZE,
-            )
+            typesettex(
+                r"d \alpha (X,Y) &= \nabla_X (\alpha (Y)) - \nabla_Y (\alpha (X)) - \alpha ([X,Y]) \\ ",
+                r"(\alpha \wedge \beta)(X,Y) &= \alpha (X) \beta (Y) - \alpha (Y) \beta (X)",
+                font_size=NOTE_FONT_SIZE,
+            ),
+            opacity=0.75
         )
-        result = typeset(
-            r"T^a = {{d e^a : d}} + {{omega^a_b and e^b : w}}",
-            RESULT_FONT_SIZE,
-        )
-        result.select("d").set_color(D_COLOR)
-        result.select("w").set_color(W_COLOR)
-
-        reference.next_to(
-            self.slide_title, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT
-        )
-        steps.next_to(reference, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
-        split.next_to(steps, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT)
-        footnotes.next_to(split, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
-        result.next_to(footnotes, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT)
+        footnotes.next_to(texsplit, m.DOWN, buff=m.MED_SMALL_BUFF, aligned_edge=m.LEFT)
+        self.play(m.Write(footnotes[0]))
+        self.nslide()
+        self.play(m.Write(footnotes[1]))
+        self.nslide()
+        result = typesettex(r"T^a", "=", "d e^a", "+", r"\omega^a{}_b \wedge e^b", font_size=RESULT_FONT_SIZE)
+        result[2].set_color(D_COLOR)
+        result[4].set_color(W_COLOR)
         box = m.SurroundingRectangle(
-            result, color=FRONTCOL, stroke_width=1.5, buff=0.16
+            result, color=FRONTCOL, buff=m.MED_SMALL_BUFF
         )
-
-        self.camera.add_fixed_in_frame_mobjects(
-            reference, steps, split, footnotes, result, box
-        )
-        self.play(m.FadeIn(reference), m.Write(step_lines[0]))
-        self.nslide()
-        self.play(m.Write(step_lines[1]))
-        self.play(m.Indicate(steps.select("conn"), color=W_COLOR, scale_factor=1.1))
-        self.nslide()
-        self.play(m.Write(split_lines[0]), m.Write(split_lines[1]))
-        self.nslide()
-        self.play(m.Write(split_lines[2]), m.FadeIn(footnotes))
-        self.nslide()
-        self.play(
-            m.LaggedStart(
-                m.Circumscribe(split.select("dfin"), color=D_COLOR),
-                m.Circumscribe(split.select("wfin"), color=W_COLOR),
-                lag_ratio=0.4,
-            )
-        )
-        self.nslide()
+        result = m.VGroup(result, box)
+        result.next_to(footnotes, m.DOWN, buff=m.MED_LARGE_BUFF, aligned_edge=m.LEFT).set_x(0)
         self.play(m.Write(result))
-        self.play(m.Create(box))
+        self.nslide()
+        
 
 
 class CartanSecondSection(_SectionBase):
