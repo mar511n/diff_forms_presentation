@@ -284,13 +284,20 @@ class CartanSetupSection(_SectionBase):
             r"Connection $1$-forms:  "
             r"$\nabla_X e_b = \omega^a{}_b(X) e_a$"
         )
+        lie_bracket_parts = ["[", "X", ",", "Y", "] = ", r"\partial_{", "X", "}", "Y", r" - \partial_{", "Y", "}", "X"]
         torsion_parts = [
             r"T(", "X", ",", "Y", r") &= \nabla_{", "X", "}", "Y",
             r" - \nabla_{", "Y", "}", "X", r" - [", "X", ",", "Y", r"] \\",
             r"T^a(", "X", ",", "Y", r") &= e^a(T(", "X", ",", "Y", "))",
         ]
-        torsion = typesettex(*torsion_parts)
         variable_colors = {"X": m.RED, "Y": m.BLUE}
+        lie_bracket = typesettex(*lie_bracket_parts, font_size=NOTE_FONT_SIZE)
+        for index, part in enumerate(lie_bracket_parts):
+            if part in variable_colors:
+                lie_bracket[index].set_color(variable_colors[part])
+        lie_bracket.set_opacity(0.75)
+        lie_bracket.next_to(self.contact_info, m.UP).to_edge(m.LEFT)
+        torsion = typesettex(*torsion_parts)
         for index, part in enumerate(torsion_parts):
             if part in variable_colors:
                 torsion[index].set_color(variable_colors[part])
@@ -544,6 +551,7 @@ class CartanSetupSection(_SectionBase):
         self.play(
             m.LaggedStart(
                 m.Write(torsion),
+                m.Write(lie_bracket),
                 m.Create(x_shaft),
                 m.Write(x_name),
                 m.Create(y_shaft),

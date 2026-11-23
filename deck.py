@@ -83,8 +83,7 @@ PresentationContents = """
 - generalized Stokes theorem
 - Poincaré lemma
 - Cartan structure equations
-- defect geometry
-- (Maxwell/Einstein eq)
+- metric <--> torsion mapping
 """
 
 

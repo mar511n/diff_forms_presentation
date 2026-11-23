@@ -21,6 +21,8 @@ from section_cartan import (
     CartanFirstSection,
     CartanSecondSection,
 )
+from section_defects import DefectsSection
+from section_metric_torsion import MetricTorsionSection
 
 
 class Presentation(
@@ -38,6 +40,8 @@ class Presentation(
     CartanSetupSection,
     CartanFirstSection,
     CartanSecondSection,
+    DefectsSection,
+    MetricTorsionSection,
     DeckScene,
 ):
     def construct(self) -> None:
@@ -67,3 +71,7 @@ class Presentation(
         self.play_cartan_first()
         self.start_section(CartanSecondSection)
         self.play_cartan_second()
+        self.start_section(DefectsSection)
+        self.play_defects()
+        self.start_section(MetricTorsionSection)
+        self.play_metric_torsion()
