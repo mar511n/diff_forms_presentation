@@ -296,7 +296,7 @@ class DefectsSection(_SectionBase):
         coframe[0:2].set_color(m.GOLD)
         coframe[7:10].set_color(m.GOLD)
         coframe.next_to(
-            coordinates, m.DOWN, buff=0.32, aligned_edge=m.LEFT
+            coordinates, m.DOWN, aligned_edge=m.LEFT
         )
         self.play(m.Write(coframe),m.FadeOut(perfect), m.FadeOut(new_line))
         self.nslide()
@@ -344,7 +344,7 @@ class DefectsSection(_SectionBase):
         burgers_line = typesettex(r"b", "^a", "=", r"\oint_C", r"e", "^a")
         burgers_line[0:2].set_color(BURGERS_COLOR)
         burgers_line[4:6].set_color(m.GOLD)
-        burgers_line.next_to(coframe, m.DOWN, buff=0.32, aligned_edge=m.LEFT)
+        burgers_line.next_to(coframe, m.DOWN, aligned_edge=m.LEFT)
         self.play(
             m.LaggedStart(*[m.Create(line) for line in circuit], lag_ratio=0.08),
             m.FadeIn(tips),
@@ -370,7 +370,7 @@ class DefectsSection(_SectionBase):
         surface_line[0:2].set_color(BURGERS_COLOR)
         surface_line[4:7].set_color(m.RED)
         surface_line[-2:].set_color(m.BLUE)
-        surface_line.next_to(burgers_line, m.DOWN, buff=0.32, aligned_edge=m.LEFT)
+        surface_line.next_to(burgers_line, m.DOWN, aligned_edge=m.LEFT)
         self.play(m.FadeIn(surface), m.Write(surface_label),m.Write(surface_line[:-4]))
         self.nslide()
 
@@ -390,16 +390,15 @@ class DefectsSection(_SectionBase):
         )
         torsion_line[4:6].set_color(m.BLUE)
         torsion_line[7:10].set_color(m.RED)
-        torsion_line.next_to(surface_line, m.DOWN, buff=0.32, aligned_edge=m.LEFT)
+        torsion_line.next_to(surface_line, m.DOWN, aligned_edge=m.LEFT)
         note = dim(
             typesettex(
-                r"\text{first structure equation:}\quad "
                 r"T^a = d e^a + \omega^a{}_b \wedge e^b",
                 font_size=NOTE_FONT_SIZE,
             ),
             opacity=0.55,
         )
-        note.next_to(torsion_line, m.DOWN, buff=0.55, aligned_edge=m.LEFT)
+        note.next_to(self.contact_info, m.UP).to_edge(m.LEFT)
         self.play(m.Write(note))
         self.nslide()
         torsion_plot = torsion_image()
@@ -420,6 +419,13 @@ class DefectsSection(_SectionBase):
             m.FadeIn(torsion_plot),
             m.Write(torsion_label),
         )
+        self.nslide()
+
+        poincare = m.MathTex(r"&\text{Poincaré lemma: \\}", r"&T^a", "= 0", r"\text{ for smooth }", r"u^a", r"(x)")
+        poincare[1].set_color(m.BLUE)
+        poincare[-2].set_color(m.YELLOW)
+        poincare.next_to(torsion_line, m.DOWN, aligned_edge=m.LEFT)
+        self.play(m.Write(poincare))
         self.nslide()
 
 

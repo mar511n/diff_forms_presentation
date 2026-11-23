@@ -83,7 +83,8 @@ PresentationContents = """
 - generalized Stokes theorem
 - Poincaré lemma
 - Cartan structure equations
-- metric <--> torsion mapping
+- dislocations as torsion
+- metric-torsion mapping
 """
 
 
