@@ -80,7 +80,7 @@ PresentationContents = """
 - differential forms
 - wedge product
 - exterior derivative
-- generalized Stokes theorem
+- generalized Stokes' theorem
 - Poincaré lemma
 - Cartan structure equations
 - dislocations as torsion

@@ -36,7 +36,7 @@ class MetricTorsionSection(_SectionBase):
         self.nslide()
 
         left_block = (
-            "geometry with nontrivial vielbein $e^a$ / metric $g$ and $R eq.not 0$"
+            "geometry with nontrivial coframe $e^a$ / metric $g$ and $R eq.not 0$"
         )
         right_block = r"geometry with torsion induced dynamics ($T eq.not 0$)"
 
@@ -126,7 +126,7 @@ class MetricTorsionSection(_SectionBase):
         self.add(dirac_eq_s_r21)
         self.nslide()
 
-        dirac_eq_s_r3 = m.MathTex(r"\text{Dirac equation from symmetric action} \\", r"(d \psi)(", "e", "'", r")", "-", r"\frac{1}{4}", r"\omega", "'_T", "(e", "'", ")", r"\psi")
+        dirac_eq_s_r3 = m.MathTex(r"\text{Dirac equation from symmetric action} \\", r"(d \psi)(", "e", "'", r")", "-", r"\frac{1}{4}", r"\omega", "'_T", "(e", "'", ")", r"\gamma", r"\psi")
         dirac_eq_s_r3.next_to(d_arrow, m.UP, buff=m.SMALL_BUFF)
         self.play(
             m.TransformMatchingTex(dirac_eq_s_r21, dirac_eq_s_r3, transform_mismatches=True, fade_transform_mismatches=True),
@@ -134,7 +134,7 @@ class MetricTorsionSection(_SectionBase):
         )
         self.nslide()
 
-        dirac_eq_s_r4 = m.MathTex(r"\text{Dirac equation from symmetric action} \\", r"(d \psi)(", "e", r")", "+", r"\frac{1}{4}", r"\omega", r"_{\mathrm{(LC)}}", "(e", ")", r"\psi")
+        dirac_eq_s_r4 = m.MathTex(r"\text{Dirac equation from symmetric action} \\", r"(d \psi)(", "e", r")", "+", r"\frac{1}{4}", r"\omega", r"_{\mathrm{(LC)}}", "(e", ")", r"\gamma", r"\psi")
         dirac_eq_s_r4.next_to(d_arrow, m.UP, buff=m.SMALL_BUFF)
         smiley = m.Tex("🙂", font_size=3*CONTENT_FONT_SIZE).next_to(wb, m.RIGHT, buff=1.0)
         self.play(

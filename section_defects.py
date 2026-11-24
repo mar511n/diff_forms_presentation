@@ -421,7 +421,7 @@ class DefectsSection(_SectionBase):
         )
         self.nslide()
 
-        poincare = m.MathTex(r"&\text{Poincaré lemma: \\}", r"&T^a", "= 0", r"\text{ for smooth }", r"u^a", r"(x)")
+        poincare = m.MathTex(r"&\text{nilpotence: \\}", r"&T^a", "= 0", r"\text{ for single-valued }", r"u^a", r"(x)")
         poincare[1].set_color(m.BLUE)
         poincare[-2].set_color(m.YELLOW)
         poincare.next_to(torsion_line, m.DOWN, aligned_edge=m.LEFT)

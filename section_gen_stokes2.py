@@ -34,7 +34,7 @@ class GenStokes2Section(_SectionBase):
         table = m.MobjectTable(
             [
                 [
-                    text("Generalized Stokes"),
+                    text("Generalized Stokes'"),
                     text(r"oriented $(k+1)$-manifold #linebreak() with boundary"),
                     text(r"$k$-form"),
                     text("exterior derivative"),
@@ -65,7 +65,7 @@ class GenStokes2Section(_SectionBase):
                     ),
                 ],
                 [
-                    text("Stokes theorem"),
+                    text("Stokes' theorem"),
                     text(r"oriented surface $S$"),
                     math(r"F_x d x + F_y d y + F_z d z"),
                     math(r"(bold(nabla) times bold(F)) dot d bold(A)"),
@@ -75,7 +75,7 @@ class GenStokes2Section(_SectionBase):
                     ),
                 ],
                 [
-                    text("Gauss theorem"),
+                    text("Gauss's theorem"),
                     text(r"volume $V$"),
                     math(
                         r"F_x d y and d z + F_y d z and d x "

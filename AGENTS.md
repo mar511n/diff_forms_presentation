@@ -142,9 +142,8 @@ self.play_foo()
 - Keep the current theme: `DARK_MODE`, `BACKCOL`, `FRONTCOL`, `TITLE_FONT_SIZE`,
   `CONTENT_FONT_SIZE`, and the `m.Typst`/`m.DecimalNumber` defaults. Do not hardcode a
   different palette or font size without a reason.
-- Use `m.Typst` for typeset text and math (the talk no longer uses `m.Tex`). Write raw
-  strings and pass `typst_preamble(font_size)` so text wraps at `MAX_TEXT_WIDTH`. Keep
-  `PresentationTitle` and `PresentationTitleShort` consistent.
+- Write raw strings and pass `typst_preamble(font_size)` so text wraps at `MAX_TEXT_WIDTH`.
+  Keep `PresentationTitle` and `PresentationTitleShort` consistent.
 - Slide titles are wrapped in Typst bold `*...*`; avoid unbalanced Typst markup, labels
   or special characters in the title strings.
 - Compose with `VGroup`, `next_to`, `arrange`, and `to_edge` rather than absolute

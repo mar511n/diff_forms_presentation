@@ -14,8 +14,10 @@ Run it with the art toolchain, not the ManimGX environment:
     ~/.venvs/title-art/bin/pip install typst pillow numpy tqdm
     ~/.venvs/title-art/bin/python tools/make_title_art.py
 
-Writes ``assets/title_math_background.png`` (1920x1080), which
-``section_title.py`` loads as the title background.
+Writes ``assets/title_math_background_10.png`` (1920x1080), which
+``section_title.py`` loads as the title background, and an SVG of the same
+field next to it: the same placements as vector formulas, each distinct
+formula defined once as a ``<symbol>`` and referenced by ``<use>``.
 
 Typeset sprites are cached under ``$XDG_CACHE_HOME/cartan-title-art``
 (``~/.cache/cartan-title-art`` by default), so tweaking ``COUNT``, ``SEED`` or
@@ -26,7 +28,9 @@ a fresh typeset.
 import functools
 import hashlib
 import io
+import json
 import os
+import re
 from pathlib import Path
 
 import numpy as np
@@ -40,6 +44,7 @@ SEED = 10
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "assets" / "cartan.png"
 DESTINATION = ROOT / "assets" / "title_math_background_10.png"
+DESTINATION_SVG = DESTINATION.with_suffix(".svg")
 
 # Deck palette: BACKCOL is the slide background.
 BACK = np.array([18, 19, 23], dtype=np.float64)
@@ -215,13 +220,46 @@ def sprite(source, ppi):
     bbox = image.split()[3].getbbox()
     if bbox:
         image = image.crop(bbox)
+    else:
+        bbox = (0, 0, image.width, image.height)
     mask = np.asarray(image.split()[3], dtype=np.uint8)
 
     CACHE.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(f"{path.stem}.{os.getpid()}.tmp")
     Image.fromarray(mask).save(temporary, format="PNG")
     os.replace(temporary, path)  # atomic, so parallel runs cannot corrupt it
+    # The crop offset is lost from the mask but the SVG needs it; keep it too.
+    path.with_suffix(".bbox").write_text(json.dumps(bbox), encoding="utf-8")
     return mask
+
+
+def sprite_ppi(source, height_px):
+    """ppi a formula must be typeset at to stay sharp at `height_px`."""
+    base = sprite(source, 600)
+    need = height_px * 1.4 / base.shape[0]
+    return 600 if need <= 1 else (1200 if need <= 2 else 2400)
+
+
+@functools.lru_cache(maxsize=512)
+def sprite_bbox(source, ppi):
+    """Ink bbox of a formula, in pixels at `ppi` -- the crop `sprite` applies.
+
+    Read from a sidecar next to the cached mask. Entries written before the
+    SVG existed have no sidecar, so they are typeset once more to recover it.
+    """
+    sidecar = cache_path(source, ppi).with_suffix(".bbox")
+    try:
+        return tuple(json.loads(sidecar.read_text(encoding="utf-8")))
+    except (OSError, ValueError):
+        pass
+
+    document = f"{PREAMBLE}\n$ {source} $"
+    png = typst.compile(document.encode(), format="png", ppi=ppi)
+    image = Image.open(io.BytesIO(png)).convert("RGBA")
+    bbox = image.split()[3].getbbox() or (0, 0, image.width, image.height)
+    CACHE.mkdir(parents=True, exist_ok=True)
+    sidecar.write_text(json.dumps(bbox), encoding="utf-8")
+    return tuple(bbox)
 
 
 @functools.lru_cache(maxsize=256)
@@ -231,10 +269,7 @@ def ink_at(source, height_px):
     Returns ``None`` when the formula would have to be upscaled, which would
     blur it into a blob (e.g. the dot of ``dot.c``).
     """
-    base = sprite(source, 600)
-    need = height_px * 1.4 / base.shape[0]
-    ppi = 600 if need <= 1 else (1200 if need <= 2 else 2400)
-    mask = sprite(source, ppi)
+    mask = sprite(source, sprite_ppi(source, height_px))
     if mask.shape[0] < height_px:
         return None
     width = max(1, round(mask.shape[1] * height_px / mask.shape[0]))
@@ -313,6 +348,77 @@ def paste(canvas, ink, x, y, colour, alpha=1.0):
     view[:] = view * (1.0 - a) + colour * a
 
 
+# --- SVG -------------------------------------------------------------------
+
+
+def hex_colour(colour):
+    red, green, blue = (int(round(value)) for value in colour)
+    return f"#{red:02x}{green:02x}{blue:02x}"
+
+
+def sprite_symbol(symbol_id, source, ppi):
+    """One formula as an SVG <g>, cropped to its ink bbox.
+
+    Typst marks its glyph paths with content hashes as ids, so every id and
+    reference is prefixed with the symbol's own id: hundreds of typeset
+    documents can then share one <defs> without colliding. The black fills are
+    dropped so the paths inherit the colour set on each placement.
+
+    The result is a plain <g> with an explicit translate, not a <symbol> with a
+    viewBox: the deck reads this file with ManimGX's SVGMobject, whose SVG
+    library follows <use> but ignores a symbol's viewport, which would draw
+    every formula at its raw point size (about fifteen times too small).
+    """
+    body = typst.compile(
+        f"{PREAMBLE}\n$ {source} $".encode(), format="svg"
+    ).decode()
+    body = body[body.index(">") + 1:body.rindex("</svg>")]
+    body = re.sub(r'id="([^"]+)"', rf'id="{symbol_id}-\1"', body)
+    body = re.sub(r'href="#([^"]+)"', rf'href="#{symbol_id}-\1"', body)
+    body = body.replace(' fill="#000000"', "")
+
+    left, top, _, _ = (value * 72 / ppi for value in sprite_bbox(source, ppi))
+    return (
+        f'<g id="{symbol_id}"><g transform="translate({-left:.4f} {-top:.4f})">'
+        f"{body}</g></g>"
+    )
+
+
+def write_svg(placements, path):
+    """Write the placed sprites as one vector document.
+
+    `placements` holds (source, ppi, x, y, width, height, colour, alpha) in
+    painting order, so the SVG stacks the formulas exactly like the raster.
+    Each placement is scaled and moved by its own transform, which reproduces
+    the crop and the size `ink_at` produced.
+    """
+    symbols = {}
+    for source, ppi, *_ in placements:
+        symbols.setdefault((source, ppi), len(symbols))
+
+    parts = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        f'<svg xmlns="http://www.w3.org/2000/svg" '
+        f'xmlns:xlink="http://www.w3.org/1999/xlink" width="{W}" height="{H}" '
+        f'viewBox="0 0 {W} {H}">',
+        f'<rect width="{W}" height="{H}" fill="{hex_colour(BACK)}"/>',
+        "<defs>",
+    ]
+    for (source, ppi), number in symbols.items():
+        parts.append(sprite_symbol(f"g{number}", source, ppi))
+    parts.append("</defs>")
+    for source, ppi, x, y, width, height, colour, alpha in placements:
+        _, top, _, bottom = sprite_bbox(source, ppi)
+        scale = height / ((bottom - top) * 72 / ppi)
+        parts.append(
+            f'<g transform="translate({x} {y}) scale({scale:.6f})" '
+            f'fill="{hex_colour(colour)}" fill-opacity="{alpha:.3f}">'
+            f'<use href="#g{symbols[(source, ppi)]}"/></g>'
+        )
+    parts.append("</svg>\n")
+    path.write_text("\n".join(parts), encoding="utf-8")
+
+
 def main():
     rng = np.random.default_rng(SEED)
     lut = colour_lut()
@@ -354,6 +460,7 @@ def main():
     coverage = np.zeros((H, W), dtype=np.float64)
     canvas = np.empty((H, W, 3), dtype=np.float64)
     canvas[:] = BACK
+    placements = []  # (source, ppi, x, y, width, height, colour, alpha), in order
 
     grid = None
     cdf = None
@@ -419,6 +526,10 @@ def main():
 
         paste(canvas, ink, x, y, colour, alpha)
         coverage[y:y + height_px, x:x + ink.shape[1]] += ink * alpha
+        placements.append(
+            (source, sprite_ppi(source, height_px), x, y, ink.shape[1],
+             height_px, tuple(colour), alpha)
+        )
 
     # Cartan's structure equations go in last, at anchor size, so nothing
     # covers them and they stay legible on top of the field.
@@ -442,6 +553,10 @@ def main():
         ))]
         colour = np.clip(tone * 1.05 + rng.normal(0, 5, 3), 0, 255)
         paste(canvas, ink, x, y, colour)
+        placements.append(
+            (source, sprite_ppi(source, FORCED_HEIGHT), x, y, ink.shape[1],
+             FORCED_HEIGHT, tuple(colour), 1.0)
+        )
         print(f"forced source at ({x}, {y})")
 
     residual = np.maximum(target - coverage, 0).mean()
@@ -449,6 +564,8 @@ def main():
     out = Image.fromarray(np.clip(canvas, 0, 255).astype(np.uint8), "RGB")
     out.save(DESTINATION)
     print(f"wrote {DESTINATION}")
+    write_svg(placements, DESTINATION_SVG)
+    print(f"wrote {DESTINATION_SVG} ({len(placements)} placements)")
 
 
 if __name__ == "__main__":

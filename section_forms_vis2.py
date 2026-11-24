@@ -25,7 +25,7 @@ class FormsVis2Section(_SectionBase):
 
     def play_formsvis2(self):
         self.nslide()
-        points = self.get_lines(self.slide_title, """- locally a $k$-form in an $n$-dimensional Manifold corresponds to a set of $(n - k)$-dimensional objects""")
+        points = self.get_lines(self.slide_title, """- locally a $k$-form in an $n$-dimensional manifold corresponds to a set of $(n - k)$-dimensional objects""")
         self.camera.add_fixed_in_frame_mobjects(*points)
         for point in points:
             self.play(m.Write(point))

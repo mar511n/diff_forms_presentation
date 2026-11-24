@@ -27,7 +27,7 @@ class FormsSection(_SectionBase):
     def play_forms(self):
         self.nslide()
         points = self.get_lines(self.slide_title, """
-        - smooth assignment $p arrow.r.long.bar omega|_p$ for a point $p$ on the Manifold $M$
+        - smooth assignment $p arrow.r.long.bar omega|_p$ for a point $p$ on the manifold $M$
         - $omega|_p$ is an _alternating_ *$k$-linear* map $omega|_p: underbrace(T_p M times dots.c times T_p M, k " times") arrow.r.long RR$
         """)
         self.camera.add_fixed_in_frame_mobjects(*points)
@@ -36,7 +36,7 @@ class FormsSection(_SectionBase):
             self.nslide()
 
         machine_bullet = m.Typst(
-            r"- Interpretation: Different machines "
+            r"- Interpretation: different machines "
             r'#box[$omega$]<omega>$|_p (manimgrp("v1", v_1), manimgrp("v2", v_2), v_3) '
             r'manimgrp("eq", eq) #h(2.6em)$',
             typst_preamble=(

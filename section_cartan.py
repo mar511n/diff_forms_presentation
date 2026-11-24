@@ -5,9 +5,8 @@ ingredients. Expanding the definitions of torsion and curvature in the frame and
 identifying the two resulting pieces with the exterior derivative and the wedge
 product gives the structure equations; no coordinate components appear.
 
-Four sections share the topic, so each of the four slides carries its own page
-number: the setup (11), the first equation (12), the second equation (13) and the
-matrix form (14).
+Three sections share the topic, so each of the four slides carries its own page
+number: the setup (11), the first equation (12) and the second equation (13).
 """
 
 from typing import TYPE_CHECKING
@@ -284,7 +283,7 @@ class CartanSetupSection(_SectionBase):
             r"Connection $1$-forms:  "
             r"$\nabla_X e_b = \omega^a{}_b(X) e_a$"
         )
-        lie_bracket_parts = ["[", "X", ",", "Y", "] = ", r"\partial_{", "X", "}", "Y", r" - \partial_{", "Y", "}", "X"]
+        lie_bracket_parts = ["[", "X", ",", "Y", "](f) = ", r"\partial_{", "X", "}(", r"\partial_{", "Y", "}", "f)-", r"\partial_{", "Y", "}(", r"\partial_{", "X", "}", "f)"]
         torsion_parts = [
             r"T(", "X", ",", "Y", r") &= \nabla_{", "X", "}", "Y",
             r" - \nabla_{", "Y", "}", "X", r" - [", "X", ",", "Y", r"] \\",

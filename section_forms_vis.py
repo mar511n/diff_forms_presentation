@@ -560,7 +560,7 @@ class FormsVisSection(_SectionBase):
 
     def play_formsvis(self):
         self.nslide()
-        points = self.get_lines(self.slide_title, """- number of dots inside an infinitesimal parallelpiped spanned by $k$ vectors""")
+        points = self.get_lines(self.slide_title, """- number of dots inside an infinitesimal parallelepiped spanned by $k$ vectors""")
         self.camera.add_fixed_in_frame_mobjects(*points)
         for point in points:
             self.play(m.Write(point))

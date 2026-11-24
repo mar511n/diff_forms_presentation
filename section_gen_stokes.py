@@ -45,7 +45,7 @@ def closest_on_boundary(points, point):
 
 class GenStokesSection(_SectionBase):
     PAGE = 8
-    TITLE = r"Generalized Stokes theorem"
+    TITLE = r"Generalized Stokes' theorem"
 
     def play_gen_stokes(self):
         self.nslide()
@@ -60,7 +60,7 @@ class GenStokesSection(_SectionBase):
         font_size = 0.68 * CONTENT_FONT_SIZE
         preamble = typst_preamble(font_size)
         cube = m.Typst(
-            r"Cube #h(0.3cm) $C(n)=[a,b]^n in RR^n$",
+            r"Cube #h(0.3cm) $C(n)=[a,b]^n subset RR^n$",
             font_size=font_size,
             typst_preamble=preamble,
         )
